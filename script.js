@@ -1,21 +1,19 @@
 document.addEventListener('DOMContentLoaded', function () {
-    let generateClickCount = 0;
-
     // Initialize utilities
     setupClipboard();
     setupDropdowns();
     setupGenerateButton();
     setupClearStorage();
-    loadFromLocalStorage(); // Load saved values when page loads
+    loadFromLocalStorage();
 
     function setupDropdowns() {
-        // Service selection dropdown
+        // Services
         document.getElementById('impactedServiceDropdownHeader').addEventListener('click', function() {
             const dropdown = document.getElementById('impactedServiceDropdownList');
             dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
         });
 
-        // Users selection dropdown
+        // Users
         document.getElementById('impactedUsersDropdownHeader').addEventListener('click', function() {
             const dropdown = document.getElementById('impactedUsersDropdownlist');
             dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
@@ -31,7 +29,6 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!serviceDropdown.contains(event.target)) {
                 serviceList.style.display = 'none';
             }
-            
             if (!usersDropdown.contains(event.target)) {
                 usersList.style.display = 'none';
             }
@@ -110,7 +107,6 @@ document.addEventListener('DOMContentLoaded', function () {
             // Add confirmation dialog before clearing storage
             if (confirm('Are you sure you want to clear all saved data? This action cannot be undone.')) {
                 localStorage.clear();
-                alert('History cleared successfully');
                 
                 // Reset form fields
                 document.getElementById('dataform').reset();
@@ -139,20 +135,12 @@ document.addEventListener('DOMContentLoaded', function () {
             const endTimeValue = document.getElementById('end-time').value;
             const nextUpdateValue = document.getElementById('next-update').value;
     
-            if (!progress) {
-                window.alert("Please Enter a Progress Update");
-                return;
-            }
-    
             const incidentInput = document.getElementById('incident-num');
             const incidentError = document.getElementById('incError');
             const startTime = formatDateTime(startTimeValue);
             const endTime = formatDateTime(endTimeValue);
             const nextUpdate = formatDateTime(nextUpdateValue);
     
-            // Validate the form before saving progress and other data
-            const validationResult = validateIncident(incidentNum);
-            
             // Process the impacted services and users for validation
             const impactedServiceCheckboxes = document.querySelectorAll('input[name="impacted-service"]:checked');
             const selectedImpactedServices = Array.from(impactedServiceCheckboxes).map(checkbox => checkbox.value);
@@ -160,11 +148,23 @@ document.addEventListener('DOMContentLoaded', function () {
             const impactedUsersCheckboxes = document.querySelectorAll('input[name="impacted-users"]:checked');
             const selectedImpactedUsers = Array.from(impactedUsersCheckboxes).map(checkbox => checkbox.value);
             
-            // Check for validation errors
+            // check service selection
+            if (selectedImpactedServices.length === 0) {
+                alert('Please Select at least one Service/Application');
+                return;
+            }
+    
+            // check user selection
+            if (selectedImpactedUsers.length === 0) {
+                alert('Please Select at least one User Impacted');
+                return;
+            }
+            
+            // check incident number
+            const validationResult = validateIncident(incidentNum);
             if (!validationResult.isValid) {
                 incidentInput.classList.add('invalid');
                 incidentError.style.display = 'block';
-                generateClickCount++;
                 return;
             } else {
                 incidentInput.classList.remove('invalid');
@@ -174,24 +174,22 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (validationResult.startsWithZero) {
                     const confirmZero = confirm('Incident number starts with zero. Do you want to proceed anyway?');
                     if (!confirmZero) {
-                        return; // User chose not to proceed
+                        return;
                     }
                 }
             }
             
-            if (selectedImpactedServices.length === 0) {
-                alert('Please Select at least one Service/Application');
-                return;
+            // Progress validation
+            if (!progress) {
+                if (!confirm("Progress is empty, proceed?")) {
+                    return;
+                }
             }
     
-            if (selectedImpactedUsers.length === 0) {
-                alert('Please Select at least one User Impacted');
-                return;
+            // All validation passed, now add progress entry if not empty
+            if (progress) {
+                addProgressEntry(progress);
             }
-            
-            // All validation passed, now add progress entry and save data
-            // Add progress entry only after validation passes
-            addProgressEntry(progress);
     
             // Save to localStorage after validation passes
             localStorage.setItem("incidentNum", incidentNum);
@@ -203,10 +201,10 @@ document.addEventListener('DOMContentLoaded', function () {
             localStorage.setItem("nextUpdate", nextUpdateValue);
     
             // Get values from storage
-            let incNumFromS = localStorage.getItem("incidentNum");
-            let serviceStatusFromS = localStorage.getItem("serviceStatus");
-            let descriptionfromS = localStorage.getItem("description");
-            let impactFromS = localStorage.getItem("impact");
+            let incNumFromLS = localStorage.getItem("incidentNum");
+            let serviceStatusFromLS = localStorage.getItem("serviceStatus");
+            let descriptionFromLS = localStorage.getItem("description");
+            let impactFromLS = localStorage.getItem("impact");
     
             // Process the impacted services and users
             const result = processSelections();
@@ -215,15 +213,15 @@ document.addEventListener('DOMContentLoaded', function () {
             // Generate the output elements
             generateOutputElements(
                 result.recepientList, 
-                serviceStatusFromS, 
-                incNumFromS, 
-                result.impactedServiceListFromS, 
-                result.impactedUsersListFromS, 
+                serviceStatusFromLS, 
+                incNumFromLS, 
+                result.impactedServiceListFromLS, 
+                result.impactedUsersListFromLS, 
                 startTime, 
                 endTime, 
                 nextUpdate, 
-                descriptionfromS, 
-                impactFromS,
+                descriptionFromLS, 
+                impactFromLS,
                 serviceStatus
             );
         });
@@ -267,8 +265,8 @@ document.addEventListener('DOMContentLoaded', function () {
         localStorage.setItem("impactedServiceList", impactedServiceList);
         localStorage.setItem("impactedUsersList", impactedUsersList);
 
-        let impactedServiceListFromS = localStorage.getItem("impactedServiceList");
-        let impactedUsersListFromS = localStorage.getItem("impactedUsersList");
+        let impactedServiceListFromLS = localStorage.getItem("impactedServiceList");
+        let impactedUsersListFromLS = localStorage.getItem("impactedUsersList");
 
         // Generate recipient list
         if (selectedImpactedUsers.includes('APAC')) {
@@ -286,8 +284,8 @@ document.addEventListener('DOMContentLoaded', function () {
         return { 
             success: true, 
             recepientList, 
-            impactedServiceListFromS, 
-            impactedUsersListFromS 
+            impactedServiceListFromLS, 
+            impactedUsersListFromLS 
         };
     }
 
@@ -322,29 +320,6 @@ document.addEventListener('DOMContentLoaded', function () {
         // Load progress entries into the table
         loadEntries();
 
-        // Apply color to service status
-        applyServiceStatusColor(rawServiceStatus);
-    }
-
-    function applyServiceStatusColor(serviceStatus) {
-        const serviceStatusDiv = document.getElementById('serviceStatusDiv');
-        if (!serviceStatusDiv) return;
-        
-        switch (serviceStatus) {
-            case "Available":
-                serviceStatusDiv.style.backgroundColor = '#6fc040';
-                break;
-            case "Under Observation":
-                serviceStatusDiv.style.backgroundColor = '#0070d2';
-                break;
-            case "Unavailable":
-                serviceStatusDiv.style.backgroundColor = 'yellow';
-                serviceStatusDiv.style.color = 'black';
-                break;
-            case "Degraded":
-                serviceStatusDiv.style.backgroundColor = 'red';
-                break;
-        }
     }
 
     function loadEntries() {
@@ -358,11 +333,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
     
-    /**
-     * Format a date input value to the required format
-     * @param {string} inputValue - The date/time input value
-     * @returns {string} Formatted date/time string
-     */
     function formatDateTime(inputValue) {
         if (!inputValue) return "";
         const date = new Date(inputValue);
@@ -374,11 +344,6 @@ document.addEventListener('DOMContentLoaded', function () {
         return `${month}/${day}/${year} ${hours}:${minutes}`;
     }
 
-    /**
-     * Validate the incident number format
-     * @param {string} num - The incident number to validate
-     * @returns {object} Validation result with success status and potential warning
-     */
     function validateIncident(num) {
         // First check basic format
         const formatValid = /^INC[0-9]{8}$/.test(num);
@@ -401,11 +366,6 @@ document.addEventListener('DOMContentLoaded', function () {
         };
     }
 
-    /**
-     * Create a row template for progress entries
-     * @param {Object} entry - The progress entry object
-     * @returns {string} HTML string for the table row
-     */
     function rowTemplate(entry) {
         return `<tr>
             <td colspan="1">${entry.datetime}</td>
@@ -413,11 +373,6 @@ document.addEventListener('DOMContentLoaded', function () {
         </tr>`;
     }
 
-    /**
-     * Format a list input value to the required format
-     * @param {Array} items - The date/time input value
-     * @returns {string} Formatted date/time string
-     */
     function formatList(items) {
         if (!Array.isArray(items)) return '';
 
@@ -432,9 +387,8 @@ document.addEventListener('DOMContentLoaded', function () {
         return `${allButLast}, and ${lastItem}`;
     }
 
-    /**
-     * Set up clipboard functionality for copy buttons
-     */
+
+    // Set up clipboard functionality for copy buttons
     function setupClipboard() {
         // Setup copy table button
         document.getElementById('copyButton').addEventListener('click', function() {
@@ -454,11 +408,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    /**
-     * Copy text content to clipboard
-     * @param {string} content - The content to copy
-     * @param {string} successElementId - The ID of the success message element
-     */
     function copyToClipboard(content, successElementId) {
         navigator.clipboard.writeText(content).then(() => {
             const message = document.getElementById(successElementId);
@@ -469,9 +418,8 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    /**
-     * Copy table with styles to clipboard
-     */
+
+    // Copy table with styles to clipboard
     function copyTableWithStyles() {
         // Get the table HTML content with styles
         const tableContent = document.getElementById('outputContent').innerHTML;
@@ -540,10 +488,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    /**
-     * Apply specific styles to table elements
-     * @param {HTMLElement} table - The table element
-     */
     function applySpecificStyles(table) {
         const logo = table.querySelector('.bnp-logo');
         if (logo) logo.style.width = '100%';
@@ -580,19 +524,15 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    /**
-     * Show copy success message
-     */
+
+    // Show copy success message
     function showCopySuccess() {
         const successMessage = document.getElementById('copySuccess');
         successMessage.style.display = 'block';
         setTimeout(() => { successMessage.style.display = 'none'; }, 1250);
     }
 
-    /**
-     * Fallback copy method for browsers that don't support ClipboardItem
-     * @param {string} htmlContent - The HTML content to copy
-     */
+    // Fallback copy method for browsers that don't support ClipboardItem
     function fallbackCopyMethod(htmlContent) {
         // Create an iframe to hold our content
         const iframe = document.createElement('iframe');
@@ -620,20 +560,8 @@ document.addEventListener('DOMContentLoaded', function () {
             document.body.removeChild(iframe);
         }
     }
-    
-    /**
-     * Generates HTML table with dynamic service status cell color
-     * @param {string} services - List of impacted services
-     * @param {string} users - List of impacted users
-     * @param {string} serviceStatus - Current service status
-     * @param {string} startTime - Formatted start time
-     * @param {string} endTime - Formatted end time
-     * @param {string} nextUpdate - Formatted next update time
-     * @param {string} incidentNum - The incident number
-     * @param {string} description - Incident description
-     * @param {string} impact - Incident impact details
-     * @returns {string} Complete HTML table
-     */
+
+    // Generates HTML table with dynamic service status cell color
     function generateTable(services, users, serviceStatus, startTime, endTime,
         nextUpdate, incidentNum, description, impact) {
        
@@ -655,56 +583,70 @@ document.addEventListener('DOMContentLoaded', function () {
             default:
                 statusClass = "status-available";
         }
-       
-        return `
-    <table class="output-table" border="1">
-    <tr>
-    <td colspan="1" style="border-right: none; padding:0">
-       <img src="assets/bnp-logo.png" alt="bnp-paribas" class="bnp-logo">
-    </td>
-    <td colspan="3" style="border-left: none; padding:0">
-       <p class="table-title">FOREX Service Desk Incident Notification</p>
-    </td>
-    </tr>
-    <tr>
-    <td class="input-question" colspan="1">Service/Application(s) Impacted:</td>
-    <td class="input-answer" colspan="1">${services}</td>
-    <td class="input-question" colspan="1">Service Status:</td>
-    <td class="input-answer ${statusClass}" colspan="1"><p id="serviceStatusDiv" class="abcd">${serviceStatus}</p></td>
-    </tr>
-    <tr>
-    <td class="input-question" colspan="1" rowspan="2">Users Impacted:</td>
-    <td class="input-answer" colspan="1" rowspan="2">${users}</td>
-    <td class="input-question" style="height:20px" colspan="1">Time Started [LT]:</td>
-    <td class="input-answer" style="height:20px" colspan="1">${startTime}</td>
-    </tr>
-    <tr>
-    <td class="input-question" style="height:20px" colspan="1">Time Ended [LT]:</td>
-    <td class="input-answer" style="height:20px" colspan="1">${endTime}</td>
-    </tr>
-    <tr>
-    <td class="input-question" colspan="1">Incident #:</td>
-    <td class="input-answer" colspan="1">${incidentNum}</td>
-    <td class="input-question" colspan="1">Next Update At [LT]:</td>
-    <td class="input-answer" colspan="1">${nextUpdate}</td>
-    </tr>
-    <tr>
-    <td class="input-question" colspan="1">Description:</td>
-    <td class="input-answer" colspan="3">${description}</td>
-    </tr>
-    <tr>
-    <td colspan="1" class="input-question">Impact:</td>
-    <td class="input-answer" colspan="3">${impact}</td>
-    </tr>
-    <tr>
-    <td colspan="4" class="progress-header">Progress in Chronological Order</td>
-    </tr>
-    <tr>
-    <td class="progress-header" colspan="1">Date/Time [LT]</td>
-    <td class="progress-header" colspan="3">Details</td>
-    </tr>
-    <tbody id="tableBody">
-    </tbody>
-    </table>`;
+        
+        // Check if there are any progress entries
+        const entries = JSON.parse(localStorage.getItem('stringEntries')) || [];
+        const hasProgressEntries = entries.length > 0;
+        
+        // Base table structure without progress section
+        let tableHTML = `
+        <table class="output-table" border="1">
+        <tr>
+        <td colspan="1" style="border-right: none; padding:0">
+           <img src="assets/bnp-logo.png" alt="bnp-paribas" class="bnp-logo">
+        </td>
+        <td colspan="3" class="table-title" style="border-left: none; padding:0">
+           <p>FOREX Service Desk Incident Notification</p>
+        </td>
+        </tr>
+        <tr>
+        <td class="input-question" colspan="1">Service/Application(s) Impacted:</td>
+        <td class="input-answer" colspan="1">${services}</td>
+        <td class="input-question" colspan="1">Service Status:</td>
+        <td class="input-answer ${statusClass}" id="serviceStatusDiv" colspan="1"><p class="abcd">${serviceStatus}</p></td>
+        </tr>
+        <tr>
+        <td class="input-question" colspan="1" rowspan="2">Users Impacted:</td>
+        <td class="input-answer" colspan="1" rowspan="2">${users}</td>
+        <td class="input-question" style="height:20px" colspan="1">Time Started [LT]:</td>
+        <td class="input-answer" style="height:20px" colspan="1">${startTime}</td>
+        </tr>
+        <tr>
+        <td class="input-question" style="height:20px" colspan="1">Time Ended [LT]:</td>
+        <td class="input-answer" style="height:20px" colspan="1">${endTime}</td>
+        </tr>
+        <tr>
+        <td class="input-question" colspan="1">Incident #:</td>
+        <td class="input-answer" colspan="1">${incidentNum}</td>
+        <td class="input-question" colspan="1">Next Update At [LT]:</td>
+        <td class="input-answer" colspan="1">${nextUpdate}</td>
+        </tr>
+        <tr>
+        <td class="input-question" colspan="1">Description:</td>
+        <td class="input-answer" colspan="3">${description}</td>
+        </tr>
+        <tr>
+        <td colspan="1" class="input-question">Impact:</td>
+        <td class="input-answer" colspan="3">${impact}</td>
+        </tr>`;
+        
+        // Only add progress section if there are entries
+        if (hasProgressEntries) {
+            tableHTML += `
+            <tr>
+            <td colspan="4" class="progress-header">Progress in Chronological Order</td>
+            </tr>
+            <tr>
+            <td class="progress-header" colspan="1">Date/Time [LT]</td>
+            <td class="progress-header" colspan="3">Details</td>
+            </tr>
+            <tbody id="tableBody">
+            </tbody>`;
+        }
+        
+        // Close the table
+        tableHTML += `</table>`;
+        
+        return tableHTML;
     }
 });

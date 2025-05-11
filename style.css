@@ -23,6 +23,7 @@ button {
     bottom: 40px;
     right: 40px;
     border-radius: 50%;
+    z-index: 99;
 }
 
 .clear-storage:hover {
@@ -316,7 +317,6 @@ input.invalid {
 }
 
 .abcd {
-    color: white;
     padding: 5px;
     border-radius: 3px;
     text-align: center;
