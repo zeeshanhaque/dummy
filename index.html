@@ -61,6 +61,7 @@
                                 <p class="down-arrow-users">&#11206;</p>
                             </div>
                             <div id="impactedUsersDropdownlist" class="impacted-dropdown-list">
+                                <label><input type="checkbox" name="impacted-users" value="GLOBAL"> GLOBAL</label>
                                 <label><input type="checkbox" name="impacted-users" value="APAC"> APAC</label>
                                 <label><input type="checkbox" name="impacted-users" value="EMEA"> EMEA</label>
                                 <label><input type="checkbox" name="impacted-users" value="AMERICAS"> AMERICAS</label>
@@ -72,7 +73,7 @@
                     <div class="form-group">
                         <label for="incident-num">Incident #:</label>
                         <input type="text" id="incident-num" class="incident-num" name="incident-num" pattern="INC[0-9]{8}" required>
-                        <div id="incError" class="error" style="display: none;">Ensure INC is in format INC12345678</div>
+                        <div id="incError" class="error" style="display: none;">Ensure INC is 11-Digit and Correct</div>
                     </div>
                 </div>
 

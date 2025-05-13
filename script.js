@@ -1,4 +1,6 @@
+// Modify the updateUserSelectionDisplay and related functions
 document.addEventListener('DOMContentLoaded', function () {
+
     // Initialize utilities
     setupClipboard();
     setupDropdowns();
@@ -7,13 +9,11 @@ document.addEventListener('DOMContentLoaded', function () {
     loadFromLocalStorage();
 
     function setupDropdowns() {
-        // Services
         document.getElementById('impactedServiceDropdownHeader').addEventListener('click', function() {
             const dropdown = document.getElementById('impactedServiceDropdownList');
             dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
         });
 
-        // Users
         document.getElementById('impactedUsersDropdownHeader').addEventListener('click', function() {
             const dropdown = document.getElementById('impactedUsersDropdownlist');
             dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
         
-        // Real-time updates for service selection
+        // Real-time updates for selections
         const serviceCheckboxes = document.querySelectorAll('input[name="impacted-service"]');
         serviceCheckboxes.forEach(checkbox => {
             checkbox.addEventListener('change', function() {
@@ -42,13 +42,48 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
         
-        // Real-time updates for user selection
         const userCheckboxes = document.querySelectorAll('input[name="impacted-users"]');
         userCheckboxes.forEach(checkbox => {
             checkbox.addEventListener('change', function() {
-                updateUserSelectionDisplay();
+                handleUserCheckboxChange(checkbox);
             });
         });
+    }
+    
+    function handleUserCheckboxChange(checkbox) {
+        if (checkbox.value === 'GLOBAL') {
+            if (checkbox.checked) {
+                // If GLOBAL is checked, uncheck and disable all other options
+                document.querySelectorAll('input[name="impacted-users"]:not([value="GLOBAL"])').forEach(cb => {
+                    cb.checked = false;
+                    cb.disabled = true;
+                });
+            } else {
+                // If GLOBAL is unchecked, enable all other options
+                document.querySelectorAll('input[name="impacted-users"]:not([value="GLOBAL"])').forEach(cb => {
+                    cb.disabled = false;
+                });
+            }
+        } else if (checkbox.value !== 'GLOBAL') {
+            // If any region is checked, uncheck and disable GLOBAL
+            const globalCheckbox = document.querySelector('input[name="impacted-users"][value="GLOBAL"]');
+            if (checkbox.checked) {
+                globalCheckbox.checked = false;
+                globalCheckbox.disabled = true;
+            } else {
+                // If no regions are selected, enable GLOBAL again
+                const anyRegionChecked = Array.from(
+                    document.querySelectorAll('input[name="impacted-users"]:not([value="GLOBAL"]):checked')
+                ).length > 0;
+               
+                if (!anyRegionChecked) {
+                    globalCheckbox.disabled = false;
+                }
+            }
+        }
+       
+        // Update display after changes
+        updateUserSelectionDisplay();
     }
     
     function updateServiceSelectionDisplay() {
@@ -59,7 +94,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const impactedServiceSelections = document.getElementById('selectedImpacted');
         impactedServiceSelections.textContent = selectedServices.length > 0 ? selectedServices.join(', ') : 'Select';
         
-        // Save selected services to localStorage
         localStorage.setItem('selectedServices', JSON.stringify(selectedServices));
     }
     
@@ -71,12 +105,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const impactedUsersSelections = document.getElementById('selectedImpactedUsers');
         impactedUsersSelections.textContent = selectedUsers.length > 0 ? selectedUsers.join(', ') : 'Select';
         
-        // Save selected users to localStorage
         localStorage.setItem('selectedUsers', JSON.stringify(selectedUsers));
     }
 
     function loadFromLocalStorage() {
-        // Load form field values
         document.getElementById('incident-num').value = localStorage.getItem('incidentNum') || '';
         document.getElementById('service-status').value = localStorage.getItem('serviceStatus') || 'Available';
         document.getElementById('description').value = localStorage.getItem('description') || '';
@@ -85,7 +117,6 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('end-time').value = localStorage.getItem('endTime') || '';
         document.getElementById('next-update').value = localStorage.getItem('nextUpdate') || '';
         
-        // Load and check service selections
         const savedServices = JSON.parse(localStorage.getItem('selectedServices')) || [];
         savedServices.forEach(service => {
             const checkbox = document.querySelector(`input[name="impacted-service"][value="${service}"]`);
@@ -93,27 +124,42 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         updateServiceSelectionDisplay();
         
-        // Load and check user selections
         const savedUsers = JSON.parse(localStorage.getItem('selectedUsers')) || [];
         savedUsers.forEach(user => {
             const checkbox = document.querySelector(`input[name="impacted-users"][value="${user}"]`);
             if (checkbox) checkbox.checked = true;
         });
+        
+        // Handle the specific case for GLOBAL and regions when loading from storage
+        const globalSelected = savedUsers.includes('GLOBAL');
+        const regionsSelected = savedUsers.some(user => ['APAC', 'EMEA', 'AMERICAS'].includes(user));
+        
+        if (globalSelected) {
+            document.querySelectorAll('input[name="impacted-users"]:not([value="GLOBAL"])').forEach(cb => {
+                cb.disabled = true;
+            });
+        } else if (regionsSelected) {
+            const globalCheckbox = document.querySelector('input[name="impacted-users"][value="GLOBAL"]');
+            globalCheckbox.disabled = true;
+        }
+        
         updateUserSelectionDisplay();
     }
 
     function setupClearStorage() {
         document.getElementById('clearStorage').addEventListener('click', function() {
-            // Add confirmation dialog before clearing storage
-            if (confirm('Are you sure you want to clear all saved data? This action cannot be undone.')) {
+            if (confirm('Clear saved Data?')) {
                 localStorage.clear();
                 
-                // Reset form fields
                 document.getElementById('dataform').reset();
                 document.getElementById('selectedImpacted').textContent = 'Select';
                 document.getElementById('selectedImpactedUsers').textContent = 'Select';
                 
-                // Hide output sections
+                // Re-enable all checkboxes
+                document.querySelectorAll('input[name="impacted-users"]').forEach(cb => {
+                    cb.disabled = false;
+                });
+                
                 document.getElementById('copyToBtn').style.display = 'none';
                 document.getElementById('copySubBtn').style.display = 'none';
                 document.getElementById('copyButton').style.display = 'none';
@@ -141,26 +187,37 @@ document.addEventListener('DOMContentLoaded', function () {
             const endTime = formatDateTime(endTimeValue);
             const nextUpdate = formatDateTime(nextUpdateValue);
     
-            // Process the impacted services and users for validation
             const impactedServiceCheckboxes = document.querySelectorAll('input[name="impacted-service"]:checked');
             const selectedImpactedServices = Array.from(impactedServiceCheckboxes).map(checkbox => checkbox.value);
     
             const impactedUsersCheckboxes = document.querySelectorAll('input[name="impacted-users"]:checked');
             const selectedImpactedUsers = Array.from(impactedUsersCheckboxes).map(checkbox => checkbox.value);
             
-            // check service selection
             if (selectedImpactedServices.length === 0) {
                 alert('Please Select at least one Service/Application');
                 return;
             }
     
-            // check user selection
             if (selectedImpactedUsers.length === 0) {
                 alert('Please Select at least one User Impacted');
                 return;
             }
+
+            if (!startTimeValue) {
+                alert('Please Provide a Start Time');
+                return;
+            }
+
+            if (!description) {
+                alert('Please Provide a Description');
+                return;
+            }
+
+            if (!impact) {
+                alert('Please Provide an Impact');
+                return;
+            }
             
-            // check incident number
             const validationResult = validateIncident(incidentNum);
             if (!validationResult.isValid) {
                 incidentInput.classList.add('invalid');
@@ -170,23 +227,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 incidentInput.classList.remove('invalid');
                 incidentError.style.display = 'none';
                 
-                // If incident number starts with zero, ask for confirmation
                 if (validationResult.startsWithZero) {
-                    const confirmZero = confirm('Incident number starts with zero. Do you want to proceed anyway?');
+                    const confirmZero = confirm('Incident number starts with Zero. Proceed anyway?');
                     if (!confirmZero) {
                         return;
                     }
                 }
             }
             
-            // Progress validation
             if (!progress) {
-                if (!confirm("Progress is empty, proceed?")) {
+                if (!confirm("Progress is Empty. Proceed anyway?")) {
                     return;
                 }
             }
     
-            // All validation passed, now add progress entry if not empty
             if (progress) {
                 addProgressEntry(progress);
             }
@@ -206,11 +260,9 @@ document.addEventListener('DOMContentLoaded', function () {
             let descriptionFromLS = localStorage.getItem("description");
             let impactFromLS = localStorage.getItem("impact");
     
-            // Process the impacted services and users
             const result = processSelections();
             if (!result.success) return;
             
-            // Generate the output elements
             generateOutputElements(
                 result.recepientList, 
                 serviceStatusFromLS, 
@@ -248,19 +300,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         let recepientDLs = [];
 
-        if (selectedImpactedServices.length === 0) {
-            alert('Please Select at least one Service/Application');
-            return { success: false };
-        }
-
-        if (selectedImpactedUsers.length === 0) {
-            alert('Please Select at least one User Impacted');
-            return { success: false };
-        }
-
         const impactedServiceList = formatList(selectedImpactedServices);
-        let impactedUsersList = formatList(selectedImpactedUsers);
-        impactedUsersList = impactedUsersList.length > 23 ? "GLOBAL" : impactedUsersList;
+        // let impactedUsersList = selectedImpactedUsers.includes('GLOBAL') ? "GLOBAL" : formatList(selectedImpactedUsers);
+        let impactedUsersList = selectedImpactedUsers.includes('APAC') && selectedImpactedUsers.includes('EMEA') && selectedImpactedUsers.includes('AMERICAS') ? "GLOBAL" : formatList(selectedImpactedUsers);
 
         localStorage.setItem("impactedServiceList", impactedServiceList);
         localStorage.setItem("impactedUsersList", impactedUsersList);
@@ -268,15 +310,19 @@ document.addEventListener('DOMContentLoaded', function () {
         let impactedServiceListFromLS = localStorage.getItem("impactedServiceList");
         let impactedUsersListFromLS = localStorage.getItem("impactedUsersList");
 
-        // Generate recipient list
-        if (selectedImpactedUsers.includes('APAC')) {
-            recepientDLs.push('apac@gmail.com');
-        }
-        if (selectedImpactedUsers.includes('EMEA')) {
-            recepientDLs.push('emea@gmail.com');
-        }
-        if (selectedImpactedUsers.includes('AMERICAS')) {
-            recepientDLs.push('americas@gmail.com');
+        // Generate recipient list based on selection
+        if (selectedImpactedUsers.includes('GLOBAL')) {
+            recepientDLs = ['apac@gmail.com', 'emea@gmail.com', 'americas@gmail.com'];
+        } else {
+            if (selectedImpactedUsers.includes('APAC')) {
+                recepientDLs.push('apac@gmail.com');
+            }
+            if (selectedImpactedUsers.includes('EMEA')) {
+                recepientDLs.push('emea@gmail.com');
+            }
+            if (selectedImpactedUsers.includes('AMERICAS')) {
+                recepientDLs.push('americas@gmail.com');
+            }
         }
 
         let recepientList = recepientDLs.join("; ");
@@ -291,7 +337,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function generateOutputElements(recepientList, serviceStatus, incidentNum, services, users, 
                                    startTime, endTime, nextUpdate, description, impact, rawServiceStatus) {
-        // Generate recipient output
         const outputRecepient = `
             <div class="receient-container flex">
                 <div class="to-div"><p class="to-tile"><u>T</u>o</p></div>
@@ -301,7 +346,6 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('outputRecepient').innerHTML = outputRecepient;
         document.getElementById('copyToBtn').style.display = 'block';
 
-        // Generate subject output
         const outputSubject = `
             <div class="sub-line flex">
                 <p class="subject-title">S<u>u</u>bject</p>
@@ -311,15 +355,35 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('outputSubject').innerHTML = outputSubject;
         document.getElementById('copySubBtn').style.display = 'block';
 
-        // Generate table output
         const outputTable = generateTable(services, users, serviceStatus, startTime, endTime, 
                                         nextUpdate, incidentNum, description, impact);
         document.getElementById('outputContent').innerHTML = outputTable;
         document.getElementById('copyButton').style.display = "block";
 
-        // Load progress entries into the table
         loadEntries();
 
+        applyServiceStatusColor(rawServiceStatus);
+    }
+
+    function applyServiceStatusColor(serviceStatus) {
+        const serviceStatusDiv = document.getElementById('serviceStatusDiv');
+        if (!serviceStatusDiv) return;
+        
+        switch (serviceStatus) {
+            case "Available":
+                serviceStatusDiv.style.backgroundColor = '#6fc040';
+                break;
+            case "Under Observation":
+                serviceStatusDiv.style.backgroundColor = '#0070d2';
+                break;
+            case "Degraded":
+                serviceStatusDiv.style.backgroundColor = 'yellow';
+                serviceStatusDiv.style.color = 'black';
+                break;
+            case "Unavailable":
+                serviceStatusDiv.style.backgroundColor = 'red';
+                break;
+        }
     }
 
     function loadEntries() {
@@ -327,7 +391,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const tableBody = document.getElementById("tableBody");
         if (!tableBody) return;
         
-        tableBody.innerHTML = ''; // Clear existing entries
+        tableBody.innerHTML = '';
         entries.forEach(entry => {
             tableBody.innerHTML += rowTemplate(entry);
         });
@@ -345,30 +409,26 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function validateIncident(num) {
-        // First check basic format
         const formatValid = /^INC[0-9]{8}$/.test(num);
         
         if (!formatValid) {
           return { 
             isValid: false,
             startsWithZero: false,
-            message: "Ensure INC is in format INC12345678"
           };
         }
         
-        // Check if the number portion starts with 0
         const startsWithZero = /^INC0/.test(num);
         
         return {
           isValid: true,
-          startsWithZero: startsWithZero,
-          message: startsWithZero ? "Incident number starts with zero" : ""
+          startsWithZero: startsWithZero
         };
     }
 
     function rowTemplate(entry) {
         return `<tr>
-            <td colspan="1">${entry.datetime}</td>
+            <td colspan="1" style="text-align: center;">${entry.datetime}</td>
             <td colspan="3">${entry.text}</td>
         </tr>`;
     }
@@ -390,18 +450,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Set up clipboard functionality for copy buttons
     function setupClipboard() {
-        // Setup copy table button
         document.getElementById('copyButton').addEventListener('click', function() {
             copyTableWithStyles();
         });
 
-        // Setup copy recipient button
         document.getElementById('copyToBtn').addEventListener('click', function() {
             const content = document.getElementById('recepient-body').textContent;
             copyToClipboard(content, 'copyToSuccess');
         });
 
-        // Setup copy subject button
         document.getElementById('copySubBtn').addEventListener('click', function() {
             const content = document.getElementById('subject-body').textContent;
             copyToClipboard(content, 'copySubSuccess');
@@ -421,19 +478,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Copy table with styles to clipboard
     function copyTableWithStyles() {
-        // Get the table HTML content with styles
         const tableContent = document.getElementById('outputContent').innerHTML;
         
-        // Create a temporary element with the styled content
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = tableContent;
         
-        // Apply table styles
         const table = tempDiv.querySelector('table');
         table.style.borderCollapse = 'collapse';
         table.style.width = '100%';
         
-        // Apply styles to all cells
         const cells = table.querySelectorAll('td');
         cells.forEach(cell => {
             cell.style.border = '1px solid #000';
@@ -441,10 +494,8 @@ document.addEventListener('DOMContentLoaded', function () {
             cell.style.height = '40px';
         });
         
-        // Apply specific styles
         applySpecificStyles(table);
         
-        // Create a blob with HTML content including basic CSS
         const htmlContent = `
         <html>
         <head>
@@ -459,8 +510,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 /* Service status colors */
                 .status-available { background-color: #6fc040; color: white; }
                 .status-observation { background-color: #0070d2; color: white; }
-                .status-unavailable { background-color: yellow; color: black; }
-                .status-degraded { background-color: red; color: white; }
+                .status-degraded { background-color: yellow; color: black; }
+                .status-unavailable { background-color: red; color: white; }
             </style>
         </head>
         <body>
@@ -470,7 +521,6 @@ document.addEventListener('DOMContentLoaded', function () {
         `;
         
         try {
-            // Use the Clipboard API to copy HTML content
             const clipboardItem = new ClipboardItem({
                 'text/html': new Blob([htmlContent], { type: 'text/html' })
             });
@@ -500,7 +550,6 @@ document.addEventListener('DOMContentLoaded', function () {
             tableTitle.style.textAlign = 'center';
         }
         
-        // Apply input-question styles
         const questionCells = table.querySelectorAll('.input-question');
         questionCells.forEach(cell => {
             cell.style.backgroundColor = 'green';
@@ -509,13 +558,11 @@ document.addEventListener('DOMContentLoaded', function () {
             cell.style.width = '25%';
         });
         
-        // Apply input-answer styles
         const answerCells = table.querySelectorAll('.input-answer');
         answerCells.forEach(cell => {
             cell.style.width = '25%';
         });
         
-        // Apply progress-header styles
         const progressHeaders = table.querySelectorAll('.progress-header');
         progressHeaders.forEach(header => {
             header.style.backgroundColor = '#f0f0f0';
@@ -525,28 +572,23 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
 
-    // Show copy success message
     function showCopySuccess() {
         const successMessage = document.getElementById('copySuccess');
         successMessage.style.display = 'block';
         setTimeout(() => { successMessage.style.display = 'none'; }, 1250);
     }
 
-    // Fallback copy method for browsers that don't support ClipboardItem
     function fallbackCopyMethod(htmlContent) {
-        // Create an iframe to hold our content
         const iframe = document.createElement('iframe');
         iframe.style.position = 'fixed';
         iframe.style.top = '-9999px';
         document.body.appendChild(iframe);
         
-        // Write content to the iframe
         const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
         iframeDoc.open();
         iframeDoc.write(htmlContent);
         iframeDoc.close();
         
-        // Try to select and copy the content
         try {
             iframeDoc.designMode = 'on';
             iframeDoc.execCommand('selectAll', false, null);
@@ -556,16 +598,13 @@ document.addEventListener('DOMContentLoaded', function () {
         } catch (err) {
             console.error('Fallback copy method failed:', err);
         } finally {
-            // Clean up
             document.body.removeChild(iframe);
         }
     }
 
-    // Generates HTML table with dynamic service status cell color
     function generateTable(services, users, serviceStatus, startTime, endTime,
         nextUpdate, incidentNum, description, impact) {
        
-        // Determine the appropriate CSS class based on service status
         let statusClass;
         switch(serviceStatus) {
             case "Available":
@@ -588,45 +627,45 @@ document.addEventListener('DOMContentLoaded', function () {
         const entries = JSON.parse(localStorage.getItem('stringEntries')) || [];
         const hasProgressEntries = entries.length > 0;
         
-        // Base table structure without progress section
+        // Base table structure
         let tableHTML = `
         <table class="output-table" border="1">
         <tr>
         <td colspan="1" style="border-right: none; padding:0">
            <img src="assets/bnp-logo.png" alt="bnp-paribas" class="bnp-logo">
         </td>
-        <td colspan="3" class="table-title" style="border-left: none; padding:0">
-           <p>FOREX Service Desk Incident Notification</p>
+        <td colspan="3" style="border-left: none; padding:0">
+           <p class="table-title">FOREX Service Desk Incident Notification</p>
         </td>
         </tr>
         <tr>
-        <td class="input-question" colspan="1">Service/Application(s) Impacted:</td>
+        <td class="input-question" colspan="1">Service/Application(s) Impacted</td>
         <td class="input-answer" colspan="1">${services}</td>
-        <td class="input-question" colspan="1">Service Status:</td>
-        <td class="input-answer ${statusClass}" id="serviceStatusDiv" colspan="1"><p class="abcd">${serviceStatus}</p></td>
+        <td class="input-question" colspan="1">Service Status</td>
+        <td class="input-answer ${statusClass}" colspan="1"><p id="serviceStatusDiv" class="abcd">${serviceStatus}</p></td>
         </tr>
         <tr>
-        <td class="input-question" colspan="1" rowspan="2">Users Impacted:</td>
+        <td class="input-question" colspan="1" rowspan="2">Users Impacted</td>
         <td class="input-answer" colspan="1" rowspan="2">${users}</td>
-        <td class="input-question" style="height:20px" colspan="1">Time Started [LT]:</td>
+        <td class="input-question" style="height:20px" colspan="1">Time Started [LT]</td>
         <td class="input-answer" style="height:20px" colspan="1">${startTime}</td>
         </tr>
         <tr>
-        <td class="input-question" style="height:20px" colspan="1">Time Ended [LT]:</td>
+        <td class="input-question" style="height:20px" colspan="1">Time Ended [LT]</td>
         <td class="input-answer" style="height:20px" colspan="1">${endTime}</td>
         </tr>
         <tr>
-        <td class="input-question" colspan="1">Incident #:</td>
+        <td class="input-question" colspan="1">Incident #</td>
         <td class="input-answer" colspan="1">${incidentNum}</td>
-        <td class="input-question" colspan="1">Next Update At [LT]:</td>
+        <td class="input-question" colspan="1">Next Update At [LT]</td>
         <td class="input-answer" colspan="1">${nextUpdate}</td>
         </tr>
         <tr>
-        <td class="input-question" colspan="1">Description:</td>
+        <td class="input-question" colspan="1">Description</td>
         <td class="input-answer" colspan="3">${description}</td>
         </tr>
         <tr>
-        <td colspan="1" class="input-question">Impact:</td>
+        <td colspan="1" class="input-question">Impact</td>
         <td class="input-answer" colspan="3">${impact}</td>
         </tr>`;
         
@@ -644,7 +683,6 @@ document.addEventListener('DOMContentLoaded', function () {
             </tbody>`;
         }
         
-        // Close the table
         tableHTML += `</table>`;
         
         return tableHTML;

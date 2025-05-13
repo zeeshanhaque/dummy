@@ -333,12 +333,12 @@ input.invalid {
     color: white;
 }
 
-.status-unavailable {
+.status-degraded {
     background-color: yellow;
     color: black;
 }
 
-.status-degraded {
+.status-unavailable {
     background-color: red;
     color: white;
 }
