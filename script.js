@@ -337,14 +337,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function generateOutputElements(recepientList, serviceStatus, incidentNum, services, users, 
                                    startTime, endTime, nextUpdate, description, impact, rawServiceStatus) {
-        const outputRecepient = `
+        const outputRecepientTo = `
             <div class="receient-container flex">
                 <div class="to-div"><p class="to-tile"><u>T</u>o</p></div>
-                <div class="to-line flex"><p class="subject-body" id="recepient-body">${recepientList}</p></div>
+                <div class="to-line flex"><p class="subject-body" id="to-recepient-body">zeeshan@gmail.com</p></div>
             </div>`;
 
-        document.getElementById('outputRecepient').innerHTML = outputRecepient;
+        document.getElementById('outputToRecepient').innerHTML = outputRecepientTo;
         document.getElementById('copyToBtn').style.display = 'block';
+
+        const outputRecepientBcc = `
+            <div class="receient-container flex">
+                <div class="to-div"><p class="to-tile"><u>B</u>cc</p></div>
+                <div class="to-line flex"><p class="subject-body" id="bcc-recepient-body">${recepientList}</p></div>
+            </div>`;
+
+        document.getElementById('outputBccRecepient').innerHTML = outputRecepientBcc;
+        document.getElementById('copyBccBtn').style.display = 'block';
 
         const outputSubject = `
             <div class="sub-line flex">
@@ -455,8 +464,13 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         document.getElementById('copyToBtn').addEventListener('click', function() {
-            const content = document.getElementById('recepient-body').textContent;
+            const content = document.getElementById('to-recepient-body').textContent;
             copyToClipboard(content, 'copyToSuccess');
+        });
+
+        document.getElementById('copyBccBtn').addEventListener('click', function() {
+            const content = document.getElementById('bcc-recepient-body').textContent;
+            copyToClipboard(content, 'copyBccSuccess');
         });
 
         document.getElementById('copySubBtn').addEventListener('click', function() {
@@ -501,8 +515,8 @@ document.addEventListener('DOMContentLoaded', function () {
         <head>
             <style>
                 body { font-family: Arial, Helvetica, sans-serif; font-size: 14px; }
-                .table-title { color: green; font-weight: bold; font-size: 18px; text-align: center; }
-                .input-question { background-color: green; font-weight: bold; color: white; width: 25%; }
+                .table-title { color: #00915A; font-weight: bold; font-size: 18px; text-align: center; }
+                .input-question { background-color: #00915A; font-weight: bold; color: white; width: 25%; }
                 .input-answer { width: 25%; }
                 .progress-header { background-color: #f0f0f0; font-weight: bold; text-align: center; }
                 .abcd { padding: 5px; border-radius: 3px; text-align: center; font-weight: bold; }
@@ -529,12 +543,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 showCopySuccess();
             }).catch(err => {
                 console.error('Failed to copy: ', err);
-                // Fallback method for browsers that don't support ClipboardItem
-                fallbackCopyMethod(htmlContent);
             });
         } catch (error) {
             console.error('ClipboardItem not supported: ', error);
-            fallbackCopyMethod(htmlContent);
         }
     }
 
@@ -544,7 +555,7 @@ document.addEventListener('DOMContentLoaded', function () {
         
         const tableTitle = table.querySelector('.table-title');
         if (tableTitle) {
-            tableTitle.style.color = 'green';
+            tableTitle.style.color = '#00915A';
             tableTitle.style.fontWeight = 'bold';
             tableTitle.style.fontSize = '18px';
             tableTitle.style.textAlign = 'center';
@@ -552,7 +563,7 @@ document.addEventListener('DOMContentLoaded', function () {
         
         const questionCells = table.querySelectorAll('.input-question');
         questionCells.forEach(cell => {
-            cell.style.backgroundColor = 'green';
+            cell.style.backgroundColor = '#00915A';
             cell.style.fontWeight = 'bold';
             cell.style.color = 'white';
             cell.style.width = '25%';
@@ -578,29 +589,6 @@ document.addEventListener('DOMContentLoaded', function () {
         setTimeout(() => { successMessage.style.display = 'none'; }, 1250);
     }
 
-    function fallbackCopyMethod(htmlContent) {
-        const iframe = document.createElement('iframe');
-        iframe.style.position = 'fixed';
-        iframe.style.top = '-9999px';
-        document.body.appendChild(iframe);
-        
-        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-        iframeDoc.open();
-        iframeDoc.write(htmlContent);
-        iframeDoc.close();
-        
-        try {
-            iframeDoc.designMode = 'on';
-            iframeDoc.execCommand('selectAll', false, null);
-            iframeDoc.execCommand('copy', false, null);
-            iframeDoc.designMode = 'off';
-            showCopySuccess();
-        } catch (err) {
-            console.error('Fallback copy method failed:', err);
-        } finally {
-            document.body.removeChild(iframe);
-        }
-    }
 
     function generateTable(services, users, serviceStatus, startTime, endTime,
         nextUpdate, incidentNum, description, impact) {

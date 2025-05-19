@@ -70,11 +70,19 @@
                         <div id="selectedImpactedUsers" class="selected-impacted-users"></div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="incident-num">Incident #:</label>
-                        <input type="text" id="incident-num" class="incident-num" name="incident-num" pattern="INC[0-9]{8}" required>
-                        <div id="incError" class="error" style="display: none;">Ensure INC is 11-Digit and Correct</div>
+                    <div class="flex input-group">
+                        <div class="form-group">
+                            <label for="incident-num">Incident #:</label>
+                            <input type="text" id="incident-num" class="incident-num" name="incident-num" pattern="INC[0-9]{8}" required>
+                            <div id="incError" class="error" style="display: none;">Ensure INC is 11-Digit and Correct</div>
+                        </div>
+
+                        <div class="p1-check">
+                            <label for="is-p1" class="p1-label">P1:</label>
+                            <input type="checkbox" id="is-p1" class="is-p1" name="is-p1" value="">
+                        </div>
                     </div>
+                    
                 </div>
 
                 <div class="flex input-group time-group">
@@ -117,10 +125,18 @@
         <div class="output-container">
 
             <div class="output-line-container flex">
-                <div id="outputRecepient" class="output-line"></div>
+                <div id="outputToRecepient" class="output-line"></div>
                 <div class="copy-function">
                     <button id="copyToBtn" style="display: none;" class="copy-btn"><img src="assets/copy.png" alt="copy" class="copy-icon"></button>
                     <div id="copyToSuccess" class="success-message" style="display: none;">Copied!</div>
+                </div>
+            </div>
+
+            <div class="output-line-container flex">
+                <div id="outputBccRecepient" class="output-line"></div>
+                <div class="copy-function">
+                    <button id="copyBccBtn" style="display: none;" class="copy-btn"><img src="assets/copy.png" alt="copy" class="copy-icon"></button>
+                    <div id="copyBccSuccess" class="success-message" style="display: none;">Copied!</div>
                 </div>
             </div>
 
@@ -135,8 +151,10 @@
 
             <div class="table-container">
                 <div id="outputContent"></div>
-                <button id="copyButton" class="copy-table-btn" style="display: none;">Copy Table</button>
-                <div id="copySuccess" class="success-message" style="display: none;">Copied!</div>
+                <div class="table-copy-div flex">
+                    <button id="copyButton" class="copy-table-btn" style="display: none;">Copy Table</button>
+                    <div id="copySuccess" class="table-success success-message" style="display: none;">Copied!</div>
+                </div>
             </div>
         </div>
     </div>

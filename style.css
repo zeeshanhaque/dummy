@@ -96,8 +96,20 @@ select,
 }
 
 .incident-num {
+    width: 274px;
     height: 40px;
     padding: 12px;
+}
+
+.p1-label {
+    text-align: center;
+    margin-bottom: 16px;
+}
+
+.is-p1 {
+    transform: scale(2);
+    width: 20px;
+    cursor: pointer;
 }
 
 textarea {
@@ -184,22 +196,22 @@ input.invalid {
 
 .generate-btn {
     background-color: white;
-    border: 3px solid green;
+    border: 3px solid #00915A;
     width: 200px;
     height: 46px;
     border-radius: 6px;
-    color: green;
+    color: #00915A;
     font-size: 16px;
     font-weight: bold;
 }
 
 .generate-btn:hover {
-    background-color: green;
+    background-color: #00915A;
     color: white;
 }
 
 .success-message {
-    color: green;
+    color: #00915A;
     margin-top: 10px;
 }
 
@@ -219,14 +231,14 @@ input.invalid {
 }
 
 .table-title {
-    color: green;
+    color: #00915A;
     font-weight: bold;
     font-size: 18px;
     text-align: center;
 }
 
 .input-question {
-    background-color: green;
+    background-color: #00915A;
     font-weight: bold;
     color: white;
     width: 25%;
@@ -235,7 +247,6 @@ input.invalid {
 .input-answer {
     width: 25%;
 }
-
 
 .progress-header {
     background-color: #f0f0f0;
@@ -314,6 +325,11 @@ input.invalid {
 
 .table-container {
     height: auto;
+}
+
+.table-copy-div {
+    align-items: center;
+    column-gap: 10px;
 }
 
 .abcd {
