@@ -262,6 +262,9 @@ input.invalid {
     margin: 8px;
     margin-bottom: 20px;
     width: 100%;
+    max-height: 100px;
+    overflow-y: scroll;
+    overflow-wrap: anywhere;
 }
 
 .sub-line {

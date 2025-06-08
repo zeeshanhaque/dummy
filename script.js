@@ -1,5 +1,10 @@
-// Modify the updateUserSelectionDisplay and related functions
 document.addEventListener('DOMContentLoaded', function () {
+
+    const EMAIL_LISTS = {
+        APAC: ['chen.yun@gmail.com', 'akira.tanaka@apacmail.com', 'priya.sharma@apacmail.com', 'min.ji.kim@apacmail.com', 'ali.hassan@emeamail.com'],
+        EMEA: ['sophie.dubois@emeamail.com', 'ali.hassan@emeamail.com', 'tom.schmidt@emeamail.com', 'lucas.nielsen@emeamail.com', 'anastasia.popov@emeamail.com'],
+        AMERICAS: ['michael.smith@americasmail.com', 'carla.martinez@americasmail.com', 'kevin.johnson@americasmail.com', 'daniela.gomez@americasmail.com', 'thiago.silva@americasmail.com']
+    };
 
     // Initialize utilities
     setupClipboard();
@@ -7,6 +12,11 @@ document.addEventListener('DOMContentLoaded', function () {
     setupGenerateButton();
     setupClearStorage();
     loadFromLocalStorage();
+
+    function getSelectedValues(name) {
+        return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`))
+                   .map(checkbox => checkbox.value);
+    }
 
     function setupDropdowns() {
         document.getElementById('impactedServiceDropdownHeader').addEventListener('click', function() {
@@ -37,9 +47,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Real-time updates for selections
         const serviceCheckboxes = document.querySelectorAll('input[name="impacted-service"]');
         serviceCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-                updateServiceSelectionDisplay();
-            });
+            checkbox.addEventListener('change', updateServiceSelectionDisplay);
         });
         
         const userCheckboxes = document.querySelectorAll('input[name="impacted-users"]');
@@ -64,7 +72,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     cb.disabled = false;
                 });
             }
-        } else if (checkbox.value !== 'GLOBAL') {
+        } else {
             // If any region is checked, uncheck and disable GLOBAL
             const globalCheckbox = document.querySelector('input[name="impacted-users"][value="GLOBAL"]');
             if (checkbox.checked) {
@@ -72,9 +80,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 globalCheckbox.disabled = true;
             } else {
                 // If no regions are selected, enable GLOBAL again
-                const anyRegionChecked = Array.from(
-                    document.querySelectorAll('input[name="impacted-users"]:not([value="GLOBAL"]):checked')
-                ).length > 0;
+                const anyRegionChecked = document.querySelectorAll('input[name="impacted-users"]:not([value="GLOBAL"]):checked').length > 0;
                
                 if (!anyRegionChecked) {
                     globalCheckbox.disabled = false;
@@ -82,40 +88,38 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
        
-        // Update display after changes
         updateUserSelectionDisplay();
     }
     
     function updateServiceSelectionDisplay() {
-        const selectedServices = Array.from(
-            document.querySelectorAll('input[name="impacted-service"]:checked')
-        ).map(checkbox => checkbox.value);
+        const selectedServices = getSelectedValues('impacted-service');
         
-        const impactedServiceSelections = document.getElementById('selectedImpacted');
-        impactedServiceSelections.textContent = selectedServices.length > 0 ? selectedServices.join(', ') : 'Select';
-        
+        document.getElementById('selectedImpacted').textContent = selectedServices.length > 0 ? selectedServices.join(', ') : 'Select';
         localStorage.setItem('selectedServices', JSON.stringify(selectedServices));
     }
     
     function updateUserSelectionDisplay() {
-        const selectedUsers = Array.from(
-            document.querySelectorAll('input[name="impacted-users"]:checked')
-        ).map(checkbox => checkbox.value);
+        const selectedUsers = getSelectedValues('impacted-users');
         
-        const impactedUsersSelections = document.getElementById('selectedImpactedUsers');
-        impactedUsersSelections.textContent = selectedUsers.length > 0 ? selectedUsers.join(', ') : 'Select';
-        
+        document.getElementById('selectedImpactedUsers').textContent = selectedUsers.length > 0 ? selectedUsers.join(', ') : 'Select';
         localStorage.setItem('selectedUsers', JSON.stringify(selectedUsers));
     }
 
     function loadFromLocalStorage() {
-        document.getElementById('incident-num').value = localStorage.getItem('incidentNum') || '';
-        document.getElementById('service-status').value = localStorage.getItem('serviceStatus') || 'Available';
-        document.getElementById('description').value = localStorage.getItem('description') || '';
-        document.getElementById('impact').value = localStorage.getItem('impact') || '';
-        document.getElementById('start-time').value = localStorage.getItem('startTime') || '';
-        document.getElementById('end-time').value = localStorage.getItem('endTime') || '';
-        document.getElementById('next-update').value = localStorage.getItem('nextUpdate') || '';
+        const formFields = {
+            'incident-num': 'incidentNum',
+            'service-status': 'serviceStatus',
+            'description': 'description',
+            'impact': 'impact',
+            'start-time': 'startTime',
+            'end-time': 'endTime',
+            'next-update': 'nextUpdate'
+        };
+
+        Object.entries(formFields).forEach(([fieldId, storageKey]) => {
+            const defaultValue = fieldId === 'service-status' ? 'Available' : '';
+            document.getElementById(fieldId).value = localStorage.getItem(storageKey) || defaultValue;
+        });
         
         const savedServices = JSON.parse(localStorage.getItem('selectedServices')) || [];
         savedServices.forEach(service => {
@@ -130,7 +134,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (checkbox) checkbox.checked = true;
         });
         
-        // Handle the specific case for GLOBAL and regions when loading from storage
+        // Handle GLOBAL and regions state when loading from storage
         const globalSelected = savedUsers.includes('GLOBAL');
         const regionsSelected = savedUsers.some(user => ['APAC', 'EMEA', 'AMERICAS'].includes(user));
         
@@ -139,8 +143,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 cb.disabled = true;
             });
         } else if (regionsSelected) {
-            const globalCheckbox = document.querySelector('input[name="impacted-users"][value="GLOBAL"]');
-            globalCheckbox.disabled = true;
+            document.querySelector('input[name="impacted-users"][value="GLOBAL"]').disabled = true;
         }
         
         updateUserSelectionDisplay();
@@ -160,123 +163,138 @@ document.addEventListener('DOMContentLoaded', function () {
                     cb.disabled = false;
                 });
                 
-                document.getElementById('copyToBtn').style.display = 'none';
-                document.getElementById('copySubBtn').style.display = 'none';
-                document.getElementById('copyButton').style.display = 'none';
-                document.getElementById('outputRecepient').innerHTML = '';
-                document.getElementById('outputSubject').innerHTML = '';
-                document.getElementById('outputContent').innerHTML = '';
+                // Hide copy buttons and clear outputs
+                ['copyToBtn', 'copyBccBtn', 'copySubBtn', 'copyButton'].forEach(btnId => {
+                    document.getElementById(btnId).style.display = 'none';
+                });
+                
+                ['outputTorecipient', 'outputBccrecipient', 'outputSubject', 'outputContent'].forEach(outputId => {
+                    document.getElementById(outputId).innerHTML = '';
+                });
             }
         });
     }
 
     function setupGenerateButton() {
         document.getElementById('generateButton').addEventListener('click', function () {
-            const incidentNum = document.getElementById('incident-num').value.trim();
-            const serviceStatus = document.getElementById('service-status').value;
-            const description = document.getElementById('description').value;
-            const impact = document.getElementById('impact').value;
-            const progress = document.getElementById('progress').value.trim();
-            const startTimeValue = document.getElementById('start-time').value;
-            const endTimeValue = document.getElementById('end-time').value;
-            const nextUpdateValue = document.getElementById('next-update').value;
-    
-            const incidentInput = document.getElementById('incident-num');
-            const incidentError = document.getElementById('incError');
-            const startTime = formatDateTime(startTimeValue);
-            const endTime = formatDateTime(endTimeValue);
-            const nextUpdate = formatDateTime(nextUpdateValue);
-    
-            const impactedServiceCheckboxes = document.querySelectorAll('input[name="impacted-service"]:checked');
-            const selectedImpactedServices = Array.from(impactedServiceCheckboxes).map(checkbox => checkbox.value);
-    
-            const impactedUsersCheckboxes = document.querySelectorAll('input[name="impacted-users"]:checked');
-            const selectedImpactedUsers = Array.from(impactedUsersCheckboxes).map(checkbox => checkbox.value);
+            const formData = {
+                incidentNum: document.getElementById('incident-num').value.trim(),
+                serviceStatus: document.getElementById('service-status').value,
+                description: document.getElementById('description').value,
+                impact: document.getElementById('impact').value,
+                progress: document.getElementById('progress').value.trim(),
+                startTime: document.getElementById('start-time').value,
+                endTime: document.getElementById('end-time').value,
+                nextUpdate: document.getElementById('next-update').value
+            };
+
+            const selectedServices = getSelectedValues('impacted-service');
+            const selectedUsers = getSelectedValues('impacted-users');
             
-            if (selectedImpactedServices.length === 0) {
-                alert('Please Select at least one Service/Application');
-                return;
-            }
-    
-            if (selectedImpactedUsers.length === 0) {
-                alert('Please Select at least one User Impacted');
-                return;
-            }
-
-            if (!startTimeValue) {
-                alert('Please Provide a Start Time');
-                return;
-            }
-
-            if (!description) {
-                alert('Please Provide a Description');
-                return;
-            }
-
-            if (!impact) {
-                alert('Please Provide an Impact');
+            if (!validateForm(formData, selectedServices, selectedUsers)) {
                 return;
             }
             
-            const validationResult = validateIncident(incidentNum);
-            if (!validationResult.isValid) {
-                incidentInput.classList.add('invalid');
-                incidentError.style.display = 'block';
-                return;
-            } else {
-                incidentInput.classList.remove('invalid');
-                incidentError.style.display = 'none';
-                
-                if (validationResult.startsWithZero) {
-                    const confirmZero = confirm('Incident number starts with Zero. Proceed anyway?');
-                    if (!confirmZero) {
-                        return;
-                    }
-                }
-            }
-            
-            if (!progress) {
-                if (!confirm("Progress is Empty. Proceed anyway?")) {
-                    return;
-                }
+            if (formData.progress) {
+                addProgressEntry(formData.progress);
             }
     
-            if (progress) {
-                addProgressEntry(progress);
-            }
+            saveFormData(formData);
     
-            // Save to localStorage after validation passes
-            localStorage.setItem("incidentNum", incidentNum);
-            localStorage.setItem("serviceStatus", serviceStatus);
-            localStorage.setItem("description", description);
-            localStorage.setItem("impact", impact);
-            localStorage.setItem("startTime", startTimeValue);
-            localStorage.setItem("endTime", endTimeValue);
-            localStorage.setItem("nextUpdate", nextUpdateValue);
-    
-            // Get values from storage
-            let incNumFromLS = localStorage.getItem("incidentNum");
-            let serviceStatusFromLS = localStorage.getItem("serviceStatus");
-            let descriptionFromLS = localStorage.getItem("description");
-            let impactFromLS = localStorage.getItem("impact");
-    
-            const result = processSelections();
-            if (!result.success) return;
+            const processedData = processSelections(selectedServices, selectedUsers);
+            const formattedTimes = formatTimes(formData);
             
             generateOutputElements(
-                result.recepientList, 
-                serviceStatusFromLS, 
-                incNumFromLS, 
-                result.impactedServiceListFromLS, 
-                result.impactedUsersListFromLS, 
-                startTime, 
-                endTime, 
-                nextUpdate, 
-                descriptionFromLS, 
-                impactFromLS,
-                serviceStatus
+                processedData.recipientList, 
+                formData.serviceStatus, 
+                formData.incidentNum, 
+                processedData.servicesFormatted, 
+                processedData.usersFormatted, 
+                formattedTimes.startTime, 
+                formattedTimes.endTime, 
+                formattedTimes.nextUpdate, 
+                formData.description, 
+                formData.impact
             );
         });
+    }
+
+    function validateForm(formData, selectedServices, selectedUsers) {
+        if (selectedServices.length === 0) {
+            alert('Please Select at least one Service/Application');
+            return false;
+        }
+
+        if (selectedUsers.length === 0) {
+            alert('Please Select at least one User Impacted');
+            return false;
+        }
+
+        if (!formData.startTime) {
+            alert('Please Provide a Start Time');
+            return false;
+        }
+
+        if (!formData.description) {
+            alert('Please Provide a Description');
+            return false;
+        }
+
+        if (!formData.impact) {
+            alert('Please Provide an Impact');
+            return false;
+        }
+        
+        const incidentInput = document.getElementById('incident-num');
+        const incidentError = document.getElementById('incError');
+        const validationResult = validateIncident(formData.incidentNum);
+        
+        if (!validationResult.isValid) {
+            incidentInput.classList.add('invalid');
+            incidentError.style.display = 'block';
+            return false;
+        } else {
+            incidentInput.classList.remove('invalid');
+            incidentError.style.display = 'none';
+            
+            if (validationResult.startsWithZero) {
+                if (!confirm('Incident number starts with Zero. Proceed anyway?')) {
+                    return false;
+                }
+            }
+        }
+        
+        if (!formData.progress) {
+            if (!confirm("Progress is Empty. Proceed anyway?")) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    function saveFormData(formData) {
+        const fieldMappings = {
+            incidentNum: 'incidentNum',
+            serviceStatus: 'serviceStatus',
+            description: 'description',
+            impact: 'impact',
+            startTime: 'startTime',
+            endTime: 'endTime',
+            nextUpdate: 'nextUpdate'
+        };
+
+        Object.entries(fieldMappings).forEach(([key, storageKey]) => {
+            localStorage.setItem(storageKey, formData[key]);
+        });
+    }
+
+    function formatTimes(formData) {
+        return {
+            startTime: formatDateTime(formData.startTime),
+            endTime: formatDateTime(formData.endTime),
+            nextUpdate: formatDateTime(formData.nextUpdate)
+        };
     }
 
     function addProgressEntry(progress) {
@@ -291,68 +309,54 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('progress').value = "";
     }
 
-    function processSelections() {
-        const impactedServiceCheckboxes = document.querySelectorAll('input[name="impacted-service"]:checked');
-        const selectedImpactedServices = Array.from(impactedServiceCheckboxes).map(checkbox => checkbox.value);
+    function processSelections(selectedServices, selectedUsers) {
+        const servicesFormatted = formatList(selectedServices);
+        
+        const allRegionsSelected = selectedUsers.includes('APAC') && 
+                                  selectedUsers.includes('EMEA') && 
+                                  selectedUsers.includes('AMERICAS');
+        
+        const usersFormatted = allRegionsSelected ? "GLOBAL" : formatList(selectedUsers);
 
-        const impactedUsersCheckboxes = document.querySelectorAll('input[name="impacted-users"]:checked');
-        const selectedImpactedUsers = Array.from(impactedUsersCheckboxes).map(checkbox => checkbox.value);
-
-        let recepientDLs = [];
-
-        const impactedServiceList = formatList(selectedImpactedServices);
-        // let impactedUsersList = selectedImpactedUsers.includes('GLOBAL') ? "GLOBAL" : formatList(selectedImpactedUsers);
-        let impactedUsersList = selectedImpactedUsers.includes('APAC') && selectedImpactedUsers.includes('EMEA') && selectedImpactedUsers.includes('AMERICAS') ? "GLOBAL" : formatList(selectedImpactedUsers);
-
-        localStorage.setItem("impactedServiceList", impactedServiceList);
-        localStorage.setItem("impactedUsersList", impactedUsersList);
-
-        let impactedServiceListFromLS = localStorage.getItem("impactedServiceList");
-        let impactedUsersListFromLS = localStorage.getItem("impactedUsersList");
-
-        // Generate recipient list based on selection
-        if (selectedImpactedUsers.includes('GLOBAL')) {
-            recepientDLs = ['apac@gmail.com', 'emea@gmail.com', 'americas@gmail.com'];
+        let allRecipients = [];
+        
+        if (selectedUsers.includes('GLOBAL')) {
+            allRecipients = [...EMAIL_LISTS.APAC, ...EMAIL_LISTS.EMEA, ...EMAIL_LISTS.AMERICAS];
         } else {
-            if (selectedImpactedUsers.includes('APAC')) {
-                recepientDLs.push('apac@gmail.com');
-            }
-            if (selectedImpactedUsers.includes('EMEA')) {
-                recepientDLs.push('emea@gmail.com');
-            }
-            if (selectedImpactedUsers.includes('AMERICAS')) {
-                recepientDLs.push('americas@gmail.com');
-            }
+            selectedUsers.forEach(region => {
+                if (EMAIL_LISTS[region]) {
+                    allRecipients = allRecipients.concat(EMAIL_LISTS[region]);
+                }
+            });
         }
 
-        let recepientList = recepientDLs.join("; ");
+        const recipientList = [...new Set(allRecipients)].join('; ');
 
         return { 
-            success: true, 
-            recepientList, 
-            impactedServiceListFromLS, 
-            impactedUsersListFromLS 
+            recipientList, 
+            servicesFormatted, 
+            usersFormatted 
         };
     }
 
-    function generateOutputElements(recepientList, serviceStatus, incidentNum, services, users, 
-                                   startTime, endTime, nextUpdate, description, impact, rawServiceStatus) {
-        const outputRecepientTo = `
+    function generateOutputElements(recipientList, serviceStatus, incidentNum, services, users, 
+                                   startTime, endTime, nextUpdate, description, impact) {
+        const outputrecipientTo = `
             <div class="receient-container flex">
                 <div class="to-div"><p class="to-tile"><u>T</u>o</p></div>
-                <div class="to-line flex"><p class="subject-body" id="to-recepient-body">zeeshan@gmail.com</p></div>
+                <div class="to-line flex"><p class="subject-body" id="to-recipient-body">zeeshan@gmail.com</p></div>
             </div>`;
 
-        document.getElementById('outputToRecepient').innerHTML = outputRecepientTo;
+        document.getElementById('outputTorecipient').innerHTML = outputrecipientTo;
         document.getElementById('copyToBtn').style.display = 'block';
 
-        const outputRecepientBcc = `
+        const outputrecipientBcc = `
             <div class="receient-container flex">
                 <div class="to-div"><p class="to-tile"><u>B</u>cc</p></div>
-                <div class="to-line flex"><p class="subject-body" id="bcc-recepient-body">${recepientList}</p></div>
+                <div class="to-line flex"><p class="subject-body" id="bcc-recipient-body">${recipientList}</p></div>
             </div>`;
 
-        document.getElementById('outputBccRecepient').innerHTML = outputRecepientBcc;
+        document.getElementById('outputBccrecipient').innerHTML = outputrecipientBcc;
         document.getElementById('copyBccBtn').style.display = 'block';
 
         const outputSubject = `
@@ -370,28 +374,26 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('copyButton').style.display = "block";
 
         loadEntries();
-
-        applyServiceStatusColor(rawServiceStatus);
+        applyServiceStatusColor(serviceStatus);
     }
 
     function applyServiceStatusColor(serviceStatus) {
         const serviceStatusDiv = document.getElementById('serviceStatusDiv');
         if (!serviceStatusDiv) return;
         
-        switch (serviceStatus) {
-            case "Available":
-                serviceStatusDiv.style.backgroundColor = '#6fc040';
-                break;
-            case "Under Observation":
-                serviceStatusDiv.style.backgroundColor = '#0070d2';
-                break;
-            case "Degraded":
-                serviceStatusDiv.style.backgroundColor = 'yellow';
-                serviceStatusDiv.style.color = 'black';
-                break;
-            case "Unavailable":
-                serviceStatusDiv.style.backgroundColor = 'red';
-                break;
+        // Reset styles
+        serviceStatusDiv.style.color = '';
+        
+        const statusStyles = {
+            "Available": { backgroundColor: '#6fc040' },
+            "Under Observation": { backgroundColor: '#0070d2' },
+            "Degraded": { backgroundColor: 'yellow', color: 'black' },
+            "Unavailable": { backgroundColor: 'red' }
+        };
+
+        const style = statusStyles[serviceStatus];
+        if (style) {
+            Object.assign(serviceStatusDiv.style, style);
         }
     }
 
@@ -400,10 +402,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const tableBody = document.getElementById("tableBody");
         if (!tableBody) return;
         
-        tableBody.innerHTML = '';
-        entries.forEach(entry => {
-            tableBody.innerHTML += rowTemplate(entry);
-        });
+        tableBody.innerHTML = entries.map(entry => rowTemplate(entry)).join('');
     }
     
     function formatDateTime(inputValue) {
@@ -427,11 +426,9 @@ document.addEventListener('DOMContentLoaded', function () {
           };
         }
         
-        const startsWithZero = /^INC0/.test(num);
-        
         return {
           isValid: true,
-          startsWithZero: startsWithZero
+          startsWithZero: /^INC0/.test(num)
         };
     }
 
@@ -442,40 +439,33 @@ document.addEventListener('DOMContentLoaded', function () {
         </tr>`;
     }
 
-    function formatList(items) {
-        if (!Array.isArray(items)) return '';
+    function formatList(item) {
+        if (!Array.isArray(item)) return '';
 
-        const len = items.length;
+        const len = item.length;
 
         if (len === 0) return '';
-        if (len === 1) return items[0];
-        if (len === 2) return `${items[0]} and ${items[1]}`;
-
-        const allButLast = items.slice(0, -1).join(', ');
-        const lastItem = items[len - 1];
-        return `${allButLast}, and ${lastItem}`;
+        if (len === 1) return item[0];
+        if (len === 2) return `${item[0]} and ${item[1]}`;
+        
+        return `${item.slice(0, -1).join(', ')}, and ${item[len - 1]}`;
     }
-
 
     // Set up clipboard functionality for copy buttons
     function setupClipboard() {
-        document.getElementById('copyButton').addEventListener('click', function() {
-            copyTableWithStyles();
-        });
+        document.getElementById('copyButton').addEventListener('click', copyTableWithStyles);
 
-        document.getElementById('copyToBtn').addEventListener('click', function() {
-            const content = document.getElementById('to-recepient-body').textContent;
-            copyToClipboard(content, 'copyToSuccess');
-        });
+        const copyButtons = [
+            { id: 'copyToBtn', contentId: 'to-recipient-body', successId: 'copyToSuccess' },
+            { id: 'copyBccBtn', contentId: 'bcc-recipient-body', successId: 'copyBccSuccess' },
+            { id: 'copySubBtn', contentId: 'subject-body', successId: 'copySubSuccess' }
+        ];
 
-        document.getElementById('copyBccBtn').addEventListener('click', function() {
-            const content = document.getElementById('bcc-recepient-body').textContent;
-            copyToClipboard(content, 'copyBccSuccess');
-        });
-
-        document.getElementById('copySubBtn').addEventListener('click', function() {
-            const content = document.getElementById('subject-body').textContent;
-            copyToClipboard(content, 'copySubSuccess');
+        copyButtons.forEach(({ id, contentId, successId }) => {
+            document.getElementById(id).addEventListener('click', function() {
+                const content = document.getElementById(contentId).textContent;
+                copyToClipboard(content, successId);
+            });
         });
     }
 
@@ -488,7 +478,6 @@ document.addEventListener('DOMContentLoaded', function () {
             console.error('Failed to copy: ', err);
         });
     }
-
 
     // Copy table with styles to clipboard
     function copyTableWithStyles() {
@@ -550,38 +539,21 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function applySpecificStyles(table) {
-        const logo = table.querySelector('.bnp-logo');
-        if (logo) logo.style.width = '100%';
-        
-        const tableTitle = table.querySelector('.table-title');
-        if (tableTitle) {
-            tableTitle.style.color = '#00915A';
-            tableTitle.style.fontWeight = 'bold';
-            tableTitle.style.fontSize = '18px';
-            tableTitle.style.textAlign = 'center';
-        }
-        
-        const questionCells = table.querySelectorAll('.input-question');
-        questionCells.forEach(cell => {
-            cell.style.backgroundColor = '#00915A';
-            cell.style.fontWeight = 'bold';
-            cell.style.color = 'white';
-            cell.style.width = '25%';
-        });
-        
-        const answerCells = table.querySelectorAll('.input-answer');
-        answerCells.forEach(cell => {
-            cell.style.width = '25%';
-        });
-        
-        const progressHeaders = table.querySelectorAll('.progress-header');
-        progressHeaders.forEach(header => {
-            header.style.backgroundColor = '#f0f0f0';
-            header.style.fontWeight = 'bold';
-            header.style.textAlign = 'center';
+        const styleElements = [
+            { selector: '.bnp-logo', styles: { width: '100%' } },
+            { selector: '.table-title', styles: { color: '#00915A', fontWeight: 'bold', fontSize: '18px', textAlign: 'center' } },
+            { selector: '.input-question', styles: { backgroundColor: '#00915A', fontWeight: 'bold', color: 'white', width: '25%' } },
+            { selector: '.input-answer', styles: { width: '25%' } },
+            { selector: '.progress-header', styles: { backgroundColor: '#f0f0f0', fontWeight: 'bold', textAlign: 'center' } }
+        ];
+
+        styleElements.forEach(({ selector, styles }) => {
+            const elements = table.querySelectorAll(selector);
+            elements.forEach(element => {
+                Object.assign(element.style, styles);
+            });
         });
     }
-
 
     function showCopySuccess() {
         const successMessage = document.getElementById('copySuccess');
@@ -589,27 +561,17 @@ document.addEventListener('DOMContentLoaded', function () {
         setTimeout(() => { successMessage.style.display = 'none'; }, 1250);
     }
 
-
     function generateTable(services, users, serviceStatus, startTime, endTime,
         nextUpdate, incidentNum, description, impact) {
        
-        let statusClass;
-        switch(serviceStatus) {
-            case "Available":
-                statusClass = "status-available";
-                break;
-            case "Under Observation":
-                statusClass = "status-observation";
-                break;
-            case "Unavailable":
-                statusClass = "status-unavailable";
-                break;
-            case "Degraded":
-                statusClass = "status-degraded";
-                break;
-            default:
-                statusClass = "status-available";
-        }
+        const statusClasses = {
+            "Available": "status-available",
+            "Under Observation": "status-observation",
+            "Unavailable": "status-unavailable",
+            "Degraded": "status-degraded"
+        };
+        
+        const statusClass = statusClasses[serviceStatus] || "status-available";
         
         // Check if there are any progress entries
         const entries = JSON.parse(localStorage.getItem('stringEntries')) || [];
