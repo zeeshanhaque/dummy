@@ -1,0 +1,42 @@
+Sub ExtractNumbersAndJoinWithPipe()
+    Dim ws As Worksheet
+    Set ws = ActiveSheet
+    
+    Dim cell As Range
+    Dim rng As Range
+    Dim result As String
+    Dim tempCell As Range
+    Dim tempCol As Long
+    Dim lastRow As Long, lastCol As Long
+    Dim numbersOnly As Collection
+    Set numbersOnly = New Collection
+    
+    ' Detect used range
+    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
+    Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, lastCol))
+    
+    ' Extract numbers only
+    For Each cell In rng
+        If IsNumeric(cell.Value) And cell.Value <> "" Then
+            numbersOnly.Add cell.Value
+        End If
+    Next cell
+    
+    ' Write numbers to a single column (optional, column Z)
+    Dim i As Long
+    For i = 1 To numbersOnly.Count
+        ws.Cells(i, "Z").Value = numbersOnly(i)
+        result = result & numbersOnly(i) & "|"
+    Next i
+    
+    ' Remove trailing pipe
+    If Right(result, 1) = "|" Then
+        result = Left(result, Len(result) - 1)
+    End If
+    
+    ' Output to cell AA1
+    ws.Range("AA1").Value = result
+    MsgBox "Pipe-separated list created in AA1 and raw numbers in column Z"
+End Sub
+
