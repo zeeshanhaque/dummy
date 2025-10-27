@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Mail Form</title>
+    <title>Communication Mail</title>
     <script src="script.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -13,7 +13,8 @@
 <body>
     <h1 class="page-title">Service Management Form</h1>
 
-    <button type="button" class="clear-storage" id="clearStorage"><img src="assets/bin.png" alt="clear" class="bin-icon"></button>
+    <button type="button" class="clear-storage" id="clearStorage"><img src="assets/bin.png" alt="clear"
+            class="bin-icon"></button>
 
 
     <div class="container flex">
@@ -70,19 +71,29 @@
                         <div id="selectedImpactedUsers" class="selected-impacted-users"></div>
                     </div>
 
-                    <div class="flex input-group">
+                    <div class="inc-group flex">
                         <div class="form-group">
                             <label for="incident-num">Incident #:</label>
-                            <input type="text" id="incident-num" class="incident-num" name="incident-num" pattern="INC[0-9]{8}" required>
-                            <div id="incError" class="error" style="display: none;">Ensure INC is 11-Digit and Correct</div>
+                            <input type="text" id="incident-num" class="incident-num" name="incident-num"
+                                pattern="INC[0-9]{8}" required>
+                            <div id="incError" class="error" style="display: none;">Ensure INC is 11-Digit and Correct
+                            </div>
                         </div>
 
-                        <div class="p1-check">
-                            <label for="is-p1" class="p1-label">P1:</label>
-                            <input type="checkbox" id="is-p1" class="is-p1" name="is-p1" value="">
+                        <div class="pty-check-container">
+                            <div class="pty-check flex">
+                                <label for="is-p1" class="pty-check-label">P1:</label>
+                                <input type="checkbox" id="is-p1" class="pty-check-box" name="is-p1" value="">
+                            </div>
+
+                            <div class="pty-check flex">
+                                <label for="is-p2" class="pty-check-label">P2:</label>
+                                <input type="checkbox" id="is-p2" class="pty-check-box" name="is-p2" value="">
+                            </div>
+
                         </div>
                     </div>
-                    
+
                 </div>
 
                 <div class="flex input-group time-group">
@@ -102,23 +113,27 @@
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="description">Description:</label>
-                    <textarea id="description" name="description"></textarea>
+                <div class="flex input-group long-text">
+                    <div class="form-group">
+                        <label for="description">Description:</label>
+                        <textarea id="description" name="description"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="impact">Impact:</label>
+                        <textarea id="impact" name="impact"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="progress">Progress:</label>
+                        <textarea id="progress" name="progress"></textarea>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="impact">Impact:</label>
-                    <textarea id="impact" name="impact"></textarea>
-                </div>
 
-                <div class="form-group">
-                    <label for="progress">Progress:</label>
-                    <textarea id="progress" name="progress"></textarea>
-                </div>
 
                 <button type="button" id="generateButton" class="generate-btn">GENERATE</button>
-                
+
             </form>
         </div>
 
@@ -127,7 +142,8 @@
             <div class="output-line-container flex">
                 <div id="outputTorecipient" class="output-line"></div>
                 <div class="copy-function">
-                    <button id="copyToBtn" style="display: none;" class="copy-btn"><img src="assets/copy.png" alt="copy" class="copy-icon"></button>
+                    <button id="copyToBtn" style="display: none;" class="copy-btn"><img src="assets/copy.png" alt="copy"
+                            class="copy-icon"></button>
                     <div id="copyToSuccess" class="success-message" style="display: none;">Copied!</div>
                 </div>
             </div>
@@ -135,7 +151,8 @@
             <div class="output-line-container flex">
                 <div id="outputBccrecipient" class="output-line"></div>
                 <div class="copy-function">
-                    <button id="copyBccBtn" style="display: none;" class="copy-btn"><img src="assets/copy.png" alt="copy" class="copy-icon"></button>
+                    <button id="copyBccBtn" style="display: none;" class="copy-btn"><img src="assets/copy.png"
+                            alt="copy" class="copy-icon"></button>
                     <div id="copyBccSuccess" class="success-message" style="display: none;">Copied!</div>
                 </div>
             </div>
@@ -143,10 +160,11 @@
             <div class="output-line-container flex">
                 <div id="outputSubject" class="output-line"></div>
                 <div class="copy-function">
-                    <button id="copySubBtn" style="display: none;" class="copy-btn"><img src="assets/copy.png" alt="copy" class="copy-icon"></button>
+                    <button id="copySubBtn" style="display: none;" class="copy-btn"><img src="assets/copy.png"
+                            alt="copy" class="copy-icon"></button>
                     <div id="copySubSuccess" class="success-message" style="display: none;">Copied!</div>
                 </div>
-                
+
             </div>
 
             <div class="table-container">

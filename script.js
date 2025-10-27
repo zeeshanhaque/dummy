@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Initialize utilities
     setupClipboard();
     setupDropdowns();
+    setupPriorityCheckboxes();
     setupGenerateButton();
     setupClearStorage();
     loadFromLocalStorage();
@@ -16,6 +17,31 @@ document.addEventListener('DOMContentLoaded', function () {
     function getSelectedValues(name) {
         return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`))
                    .map(checkbox => checkbox.value);
+    }
+
+    function setupPriorityCheckboxes() {
+        const p1Checkbox = document.getElementById('is-p1');
+        const p2Checkbox = document.getElementById('is-p2');
+
+        p1Checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                p2Checkbox.checked = false;
+                p2Checkbox.disabled = true;
+            } else {
+                p2Checkbox.disabled = false;
+            }
+            localStorage.setItem('isP1', this.checked);
+        });
+
+        p2Checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                p1Checkbox.checked = false;
+                p1Checkbox.disabled = true;
+            } else {
+                p1Checkbox.disabled = false;
+            }
+            localStorage.setItem('isP2', this.checked);
+        });
     }
 
     function setupDropdowns() {
@@ -113,7 +139,6 @@ document.addEventListener('DOMContentLoaded', function () {
             'impact': 'impact',
             'start-time': 'startTime',
             'end-time': 'endTime',
-            'next-update': 'nextUpdate'
         };
 
         Object.entries(formFields).forEach(([fieldId, storageKey]) => {
@@ -147,6 +172,21 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         
         updateUserSelectionDisplay();
+
+        // Load P1/P2 checkbox states
+        const isP1 = localStorage.getItem('isP1') === 'true';
+        const isP2 = localStorage.getItem('isP2') === 'true';
+        
+        const p1Checkbox = document.getElementById('is-p1');
+        const p2Checkbox = document.getElementById('is-p2');
+        
+        if (isP1) {
+            p1Checkbox.checked = true;
+            p2Checkbox.disabled = true;
+        } else if (isP2) {
+            p2Checkbox.checked = true;
+            p1Checkbox.disabled = true;
+        }
     }
 
     function setupClearStorage() {
@@ -163,6 +203,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     cb.disabled = false;
                 });
                 
+                // Re-enable P1/P2 checkboxes
+                document.getElementById('is-p1').disabled = false;
+                document.getElementById('is-p2').disabled = false;
+                
                 // Hide copy buttons and clear outputs
                 ['copyToBtn', 'copyBccBtn', 'copySubBtn', 'copyButton'].forEach(btnId => {
                     document.getElementById(btnId).style.display = 'none';
@@ -175,17 +219,100 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    function roundToNearestQuarter(dateTimeString) {
+        if (!dateTimeString) return '';
+        
+        const date = new Date(dateTimeString);
+        const minutes = date.getMinutes();
+        
+        // Round to nearest 15-minute interval
+        const roundedMinutes = Math.round(minutes / 15) * 15;
+        
+        if (roundedMinutes === 60) {
+            date.setHours(date.getHours() + 1);
+            date.setMinutes(0);
+        } else {
+            date.setMinutes(roundedMinutes);
+        }
+        
+        date.setSeconds(0);
+        date.setMilliseconds(0);
+        
+        // Return in the format expected by datetime-local input
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const mins = String(date.getMinutes()).padStart(2, '0');
+        
+        return `${year}-${month}-${day}T${hours}:${mins}`;
+    }
+
+    function addOneHour(dateTimeString) {
+        if (!dateTimeString) return '';
+        
+        const date = new Date(dateTimeString);
+        date.setHours(date.getHours() + 1);
+        
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+
     function setupGenerateButton() {
         document.getElementById('generateButton').addEventListener('click', function () {
+            // Get and round current time once for use in progress and next update
+            const currentTime = new Date();
+            const year = currentTime.getFullYear();
+            const month = String(currentTime.getMonth() + 1).padStart(2, '0');
+            const day = String(currentTime.getDate()).padStart(2, '0');
+            const hours = String(currentTime.getHours()).padStart(2, '0');
+            const minutes = String(currentTime.getMinutes()).padStart(2, '0');
+            const currentTimeString = roundToNearestQuarter(`${year}-${month}-${day}T${hours}:${minutes}`);
+            
+            // Round times to nearest quarter hour
+            let startTimeValue = document.getElementById('start-time').value;
+            let endTimeValue = document.getElementById('end-time').value;
+            let nextUpdateValue = document.getElementById('next-update').value;
+            const serviceStatus = document.getElementById('service-status').value;
+            
+            if (startTimeValue) {
+                startTimeValue = roundToNearestQuarter(startTimeValue);
+                document.getElementById('start-time').value = startTimeValue;
+            }
+            
+            if (endTimeValue) {
+                endTimeValue = roundToNearestQuarter(endTimeValue);
+                document.getElementById('end-time').value = endTimeValue;
+            }
+            
+            // Handle next update time based on service status
+            if (serviceStatus === 'Available') {
+                nextUpdateValue = '';
+            } else if (!nextUpdateValue) {
+                // If next update is blank and service is not Available, set to 1 hour after current time
+                nextUpdateValue = addOneHour(currentTimeString);
+            } else if (nextUpdateValue) {
+                nextUpdateValue = roundToNearestQuarter(nextUpdateValue);
+                document.getElementById('next-update').value = nextUpdateValue;
+            }
+            
             const formData = {
                 incidentNum: document.getElementById('incident-num').value.trim(),
-                serviceStatus: document.getElementById('service-status').value,
+                serviceStatus: serviceStatus,
                 description: document.getElementById('description').value,
                 impact: document.getElementById('impact').value,
                 progress: document.getElementById('progress').value.trim(),
-                startTime: document.getElementById('start-time').value,
-                endTime: document.getElementById('end-time').value,
-                nextUpdate: document.getElementById('next-update').value
+                startTime: startTimeValue,
+                endTime: endTimeValue,
+                nextUpdate: nextUpdateValue,
+                isP1: document.getElementById('is-p1').checked,
+                isP2: document.getElementById('is-p2').checked,
+                currentTimeString: currentTimeString  // Pass current time to be used for progress
             };
 
             const selectedServices = getSelectedValues('impacted-service');
@@ -196,7 +323,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             
             if (formData.progress) {
-                addProgressEntry(formData.progress);
+                addProgressEntry(formData.progress, formData.currentTimeString);
             }
     
             saveFormData(formData);
@@ -204,10 +331,13 @@ document.addEventListener('DOMContentLoaded', function () {
             const processedData = processSelections(selectedServices, selectedUsers);
             const formattedTimes = formatTimes(formData);
             
+            // Format incident number with priority
+            const incidentDisplay = formatIncidentNumber(formData.incidentNum, formData.isP1, formData.isP2);
+            
             generateOutputElements(
                 processedData.recipientList, 
                 formData.serviceStatus, 
-                formData.incidentNum, 
+                incidentDisplay, 
                 processedData.servicesFormatted, 
                 processedData.usersFormatted, 
                 formattedTimes.startTime, 
@@ -217,6 +347,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 formData.impact
             );
         });
+    }
+
+    function formatIncidentNumber(incidentNum, isP1, isP2) {
+        if (isP1) {
+            return `${incidentNum} [P1]`;
+        } else if (isP2) {
+            return `${incidentNum} [P2]`;
+        }
+        return incidentNum;
     }
 
     function validateForm(formData, selectedServices, selectedUsers) {
@@ -281,12 +420,14 @@ document.addEventListener('DOMContentLoaded', function () {
             impact: 'impact',
             startTime: 'startTime',
             endTime: 'endTime',
-            nextUpdate: 'nextUpdate'
         };
 
         Object.entries(fieldMappings).forEach(([key, storageKey]) => {
             localStorage.setItem(storageKey, formData[key]);
         });
+        
+        localStorage.setItem('isP1', formData.isP1);
+        localStorage.setItem('isP2', formData.isP2);
     }
 
     function formatTimes(formData) {
@@ -297,9 +438,9 @@ document.addEventListener('DOMContentLoaded', function () {
         };
     }
 
-    function addProgressEntry(progress) {
+    function addProgressEntry(progress, roundedTimeString) {
         const newEntry = {
-            datetime: formatDateTime(new Date()),
+            datetime: formatDateTime(roundedTimeString),
             text: progress
         };
 
