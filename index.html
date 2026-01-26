@@ -5,177 +5,216 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Communication Mail</title>
-    <script src="script.js"></script>
+    <title>Incident Management System</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-    <h1 class="page-title">Service Management Form</h1>
+    <!-- Header Section -->
+    <header class="page-header">
+        <div class="header-content">
+            <div class="header-left">
+                <div class="logo-icon">IM</div>
+                <h1 class="page-title">Incident Management System</h1>
+            </div>
+            <button type="button" class="clear-storage" id="clearStorage">
+                <img src="assets/bin.png" alt="clear" class="bin-icon">
+            </button>
+        </div>
+    </header>
 
-    <button type="button" class="clear-storage" id="clearStorage"><img src="assets/bin.png" alt="clear"
-            class="bin-icon"></button>
-
-
+    <!-- Main Container -->
     <div class="container flex">
+        <!-- Form Section -->
         <div class="form-container">
+            <div class="card">
+                <h2 class="card-title">Incident Details</h2>
 
-            <form id="dataform">
-                <div class="flex input-group">
-                    <div class="form-group">
-                        <label>Service/Application(s) Impacted:</label>
-                        <div id="impactedServiceDropdown" class="impacted-dropdown">
-                            <div id="impactedServiceDropdownHeader" class="impacted-dropdown-header">
-                                Select Service/Application(s):
-                                <p class="down-arrow">&#11206;</p>
-                            </div>
-                            <div id="impactedServiceDropdownList" class="impacted-dropdown-list">
-                                <label><input type="checkbox" name="impacted-service" value="Instagram"> Risk
-                                    Navigator</label>
-                                <label><input type="checkbox" name="impacted-service" value="Facebook"> Blue
-                                    Dice</label>
-                                <label><input type="checkbox" name="impacted-service" value="CRT"> CRT</label>
-                                <label><input type="checkbox" name="impacted-service" value="Message"> Message</label>
-                                <label><input type="checkbox" name="impacted-service" value="Whatsapp"> Whatsapp</label>
-                            </div>
-                        </div>
-                        <div id="selectedImpacted" class="selected-impacted"></div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="service-status">Service Status:</label>
-                        <select id="service-status" class="service-status" name="service-status">
-                            <option value="Available">Available</option>
-                            <option value="Unavailable">Unavailable</option>
-                            <option value="Degraded">Degraded</option>
-                            <option value="Under Observation">Under Observation</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="flex input-group">
-                    <div class="form-group">
-                        <label>User(s) Impacted:</label>
-                        <div id="impactedUsersDropdown" class="impacted-dropdown">
-                            <div id="impactedUsersDropdownHeader" class="impacted-dropdown-header">
-                                Select User(s):
-                                <p class="down-arrow-users">&#11206;</p>
-                            </div>
-                            <div id="impactedUsersDropdownlist" class="impacted-dropdown-list">
-                                <label><input type="checkbox" name="impacted-users" value="GLOBAL"> GLOBAL</label>
-                                <label><input type="checkbox" name="impacted-users" value="APAC"> APAC</label>
-                                <label><input type="checkbox" name="impacted-users" value="EMEA"> EMEA</label>
-                                <label><input type="checkbox" name="impacted-users" value="AMERICAS"> AMERICAS</label>
-                            </div>
-                        </div>
-                        <div id="selectedImpactedUsers" class="selected-impacted-users"></div>
-                    </div>
-
-                    <div class="inc-group flex">
+                <form id="dataform">
+                    <!-- Service and Status Row -->
+                    <div class="flex input-group">
                         <div class="form-group">
-                            <label for="incident-num">Incident #:</label>
-                            <input type="text" id="incident-num" class="incident-num" name="incident-num"
-                                pattern="INC[0-9]{8}" required>
-                            <div id="incError" class="error" style="display: none;">Ensure INC is 11-Digit and Correct
+                            <label>Service/Application(s) Impacted <span class="required">*</span></label>
+                            <div id="impactedServiceDropdown" class="impacted-dropdown">
+                                <div id="impactedServiceDropdownHeader" class="impacted-dropdown-header">
+                                    <span>Select Service/Application(s)</span>
+                                    <p class="down-arrow">▼</p>
+                                </div>
+                                <div id="impactedServiceDropdownList" class="impacted-dropdown-list">
+                                    <label><input type="checkbox" name="impacted-service" value="BD"> BD</label>
+                                    <label><input type="checkbox" name="impacted-service" value="MR V"> MR V</label>
+                                    <label><input type="checkbox" name="impacted-service" value="MR L"> MR L</label>
+                                    <label><input type="checkbox" name="impacted-service" value="RN"> RN</label>
+                                    <label><input type="checkbox" name="impacted-service" value="RN SN"> RN SN</label>
+                                    <label><input type="checkbox" name="impacted-service" value="DGT"> DGT</label>
+                                    <label><input type="checkbox" name="impacted-service" value="SAM"> SAM</label>
+                                    <label><input type="checkbox" name="impacted-service" value="CRT"> CRT</label>
+                                    <label><input type="checkbox" name="impacted-service" value="RXL"> RXL</label>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="pty-check-container">
-                            <div class="pty-check flex">
-                                <label for="is-p1" class="pty-check-label">P1:</label>
-                                <input type="checkbox" id="is-p1" class="pty-check-box" name="is-p1" value="">
-                            </div>
-
-                            <div class="pty-check flex">
-                                <label for="is-p2" class="pty-check-label">P2:</label>
-                                <input type="checkbox" id="is-p2" class="pty-check-box" name="is-p2" value="">
-                            </div>
-
+                        <div class="form-group">
+                            <label for="service-status">Service Status <span class="required">*</span></label>
+                            <select id="service-status" class="service-status" name="service-status">
+                                <option value="Available">Available</option>
+                                <option value="Unavailable">Unavailable</option>
+                                <option value="Degraded">Degraded</option>
+                                <option value="Under Observation">Under Observation</option>
+                            </select>
                         </div>
                     </div>
 
-                </div>
+                    <!-- Users and Incident Row -->
+                    <div class="flex input-group">
+                        <div class="form-group">
+                            <label>User(s) Impacted <span class="required">*</span></label>
+                            <div id="impactedUsersDropdown" class="impacted-dropdown">
+                                <div id="impactedUsersDropdownHeader" class="impacted-dropdown-header">
+                                    <span>Select User(s)</span>
+                                    <p class="down-arrow-users">▼</p>
+                                </div>
+                                <div id="impactedUsersDropdownlist" class="impacted-dropdown-list">
+                                    <label><input type="checkbox" name="impacted-users" value="GLOBAL"> GLOBAL</label>
+                                    <label><input type="checkbox" name="impacted-users" value="APAC"> APAC</label>
+                                    <label><input type="checkbox" name="impacted-users" value="EMEA"> EMEA</label>
+                                    <label><input type="checkbox" name="impacted-users" value="AMERICAS">
+                                        AMERICAS</label>
+                                </div>
+                            </div>
+                        </div>
 
-                <div class="flex input-group time-group">
-                    <div class="form-group">
-                        <label for="start-time">Time Started [LT]:</label>
-                        <input type="datetime-local" id="start-time" name="start-time">
+                        <div class="form-group inc-container flex">
+                            <div class="inc-multi-inp-grp">
+                                <label for="incident-num">Incident # <span class="required">*</span></label>
+                                <div class="incident-input-container">
+                                    <input type="text" id="incident-num" class="incident-num" name="incident-num"
+                                        pattern="INC[0-9]{8}" placeholder="INC00000000">
+
+                                    <div class="inc-pty-add-btn-grp flex">
+                                        <div class="pty-check-container">
+                                            <div class="pty-check flex">
+                                                <label for="is-p1" class="pty-check-label">P1</label>
+                                                <input type="checkbox" id="is-p1" class="pty-check-box" name="is-p1">
+                                            </div>
+
+                                            <div class="pty-check flex">
+                                                <label for="is-p2" class="pty-check-label">P2</label>
+                                                <input type="checkbox" id="is-p2" class="pty-check-box" name="is-p2">
+                                            </div>
+                                        </div>
+                                        <button type="button" class="add-incident-btn" id="addIncidentBtn">
+                                            <img src="assets/right-arrow.png" alt="add" class="add-inc-icon">
+                                        </button>
+                                    </div>
+
+                                </div>
+                                <div id="incError" class="error" style="display: none;">Ensure INC is 11-Digit and
+                                    Correct</div>
+
+                            </div>
+
+
+                            <div class="incidents-list flex" id="incidentsList">
+                                <!-- Incidents will be added here -->
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="end-time">Time Ended [LT]:</label>
-                        <input type="datetime-local" id="end-time" name="end-time">
+                    <!-- Time Fields Row -->
+                    <div class="flex input-group time-group">
+                        <div class="form-group">
+                            <label for="start-time">Time Started [LT] <span class="required">*</span></label>
+                            <input type="datetime-local" id="start-time" name="start-time">
+                        </div>
+
+                        <div class="form-group" id="end-time-group" style="display: none;">
+                            <label for="end-time">Time Ended [LT] <span class="required">*</span></label>
+                            <input type="datetime-local" id="end-time" name="end-time">
+                        </div>
+
+                        <div class="form-group" id="update-time-group" style="display: none;">
+                            <label for="next-update">Next Update At [LT]</label>
+                            <input type="datetime-local" id="next-update" name="next-update">
+                        </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="next-update">Next Update At [LT]:</label>
-                        <input type="datetime-local" id="next-update" name="next-update">
+                    <!-- Description, Impact, Progress Row -->
+                    <div class="flex input-group long-text">
+                        <div class="form-group">
+                            <label for="description">Description <span class="required">*</span></label>
+                            <textarea id="description" name="description"
+                                placeholder="Describe the incident..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="impact">Impact <span class="required">*</span></label>
+                            <textarea id="impact" name="impact" placeholder="Describe the impact..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="progress">Progress</label>
+                            <textarea id="progress" name="progress" placeholder="Add progress notes..."></textarea>
+                        </div>
                     </div>
-                </div>
 
-                <div class="flex input-group long-text">
-                    <div class="form-group">
-                        <label for="description">Description:</label>
-                        <textarea id="description" name="description"></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="impact">Impact:</label>
-                        <textarea id="impact" name="impact"></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="progress">Progress:</label>
-                        <textarea id="progress" name="progress"></textarea>
-                    </div>
-                </div>
-
-
-
-                <button type="button" id="generateButton" class="generate-btn">GENERATE</button>
-
-            </form>
+                    <button type="button" id="generateButton" class="generate-btn">GENERATE NOTIFICATION</button>
+                </form>
+            </div>
         </div>
 
+        <!-- Output Section -->
         <div class="output-container">
+            <div class="card">
+                <h2 class="card-title">Generated Output</h2>
 
-            <div class="output-line-container flex">
-                <div id="outputTorecipient" class="output-line"></div>
-                <div class="copy-function">
-                    <button id="copyToBtn" style="display: none;" class="copy-btn"><img src="assets/copy.png" alt="copy"
-                            class="copy-icon"></button>
-                    <div id="copyToSuccess" class="success-message" style="display: none;">Copied!</div>
-                </div>
-            </div>
-
-            <div class="output-line-container flex">
-                <div id="outputBccrecipient" class="output-line"></div>
-                <div class="copy-function">
-                    <button id="copyBccBtn" style="display: none;" class="copy-btn"><img src="assets/copy.png"
-                            alt="copy" class="copy-icon"></button>
-                    <div id="copyBccSuccess" class="success-message" style="display: none;">Copied!</div>
-                </div>
-            </div>
-
-            <div class="output-line-container flex">
-                <div id="outputSubject" class="output-line"></div>
-                <div class="copy-function">
-                    <button id="copySubBtn" style="display: none;" class="copy-btn"><img src="assets/copy.png"
-                            alt="copy" class="copy-icon"></button>
-                    <div id="copySubSuccess" class="success-message" style="display: none;">Copied!</div>
+                <!-- To Recipient -->
+                <div class="output-line-container flex">
+                    <div id="outputTorecipient" class="output-line"></div>
+                    <div class="copy-function">
+                        <button id="copyToBtn" style="display: none;" class="copy-btn">
+                            <img src="assets/copy.png" alt="copy" class="copy-icon">
+                        </button>
+                        <div id="copyToSuccess" class="success-message" style="display: none;">✓ Copied!</div>
+                    </div>
                 </div>
 
-            </div>
+                <!-- BCC Recipient -->
+                <div class="output-line-container flex">
+                    <div id="outputBccrecipient" class="output-line"></div>
+                    <div class="copy-function">
+                        <button id="copyBccBtn" style="display: none;" class="copy-btn">
+                            <img src="assets/copy.png" alt="copy" class="copy-icon">
+                        </button>
+                        <div id="copyBccSuccess" class="success-message" style="display: none;">✓ Copied!</div>
+                    </div>
+                </div>
 
-            <div class="table-container">
-                <div id="outputContent"></div>
-                <div class="table-copy-div flex">
-                    <button id="copyButton" class="copy-table-btn" style="display: none;">Copy Table</button>
-                    <div id="copySuccess" class="table-success success-message" style="display: none;">Copied!</div>
+                <!-- Subject -->
+                <div class="output-line-container flex">
+                    <div id="outputSubject" class="output-line"></div>
+                    <div class="copy-function">
+                        <button id="copySubBtn" style="display: none;" class="copy-btn">
+                            <img src="assets/copy.png" alt="copy" class="copy-icon">
+                        </button>
+                        <div id="copySubSuccess" class="success-message" style="display: none;">✓ Copied!</div>
+                    </div>
+                </div>
+
+                <!-- Table Output -->
+                <div class="table-container">
+                    <div id="outputContent"></div>
+                    <div class="table-copy-div flex">
+                        <button id="copyButton" class="copy-table-btn" style="display: none;">Copy Table</button>
+                        <div id="copySuccess" class="table-success success-message" style="display: none;">✓ Copied!
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <script src="script.js"></script>
 </body>
 
 </html>

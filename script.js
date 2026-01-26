@@ -6,24 +6,63 @@ document.addEventListener('DOMContentLoaded', function () {
         AMERICAS: ['michael.smith@americasmail.com', 'carla.martinez@americasmail.com', 'kevin.johnson@americasmail.com', 'daniela.gomez@americasmail.com', 'thiago.silva@americasmail.com']
     };
 
+    let incidents = [];
+
     // Initialize utilities
     setupClipboard();
     setupDropdowns();
     setupPriorityCheckboxes();
+    setupIncidentButton();  // ADD THIS
+    loadFromLocalStorage();
+    loadIncidentsFromStorage();  // MOVE THIS HERE
+    setupServiceStatusHandler();
     setupGenerateButton();
     setupClearStorage();
-    loadFromLocalStorage();
+
 
     function getSelectedValues(name) {
         return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`))
-                   .map(checkbox => checkbox.value);
+            .map(checkbox => checkbox.value);
+    }
+
+    function setupServiceStatusHandler() {
+        const serviceStatusSelect = document.getElementById('service-status');
+        const endTimeGroup = document.getElementById('end-time').closest('.form-group');
+        const nextUpdateGroup = document.getElementById('next-update').closest('.form-group');
+        const endTimeLabel = endTimeGroup.querySelector('label');
+        const nextUpdateLabel = nextUpdateGroup.querySelector('label');
+
+        function updateTimeFieldsVisibility() {
+            const status = serviceStatusSelect.value;
+
+            if (status === 'Available') {
+                // Show end time with required, hide next update
+                endTimeGroup.style.display = 'block';
+                nextUpdateGroup.style.display = 'none';
+                endTimeLabel.innerHTML = 'Time Ended [LT] <span class="required">*</span>';
+                document.getElementById('end-time').required = true;
+                document.getElementById('next-update').required = false;
+            } else {
+                // Hide end time, show next update with required
+                endTimeGroup.style.display = 'none';
+                nextUpdateGroup.style.display = 'block';
+                nextUpdateLabel.innerHTML = 'Next Update At [LT]';
+                document.getElementById('end-time').required = false;
+                document.getElementById('next-update').required = true;
+            }
+        }
+
+        serviceStatusSelect.addEventListener('change', updateTimeFieldsVisibility);
+
+        // Initialize visibility on page load
+        updateTimeFieldsVisibility();
     }
 
     function setupPriorityCheckboxes() {
         const p1Checkbox = document.getElementById('is-p1');
         const p2Checkbox = document.getElementById('is-p2');
 
-        p1Checkbox.addEventListener('change', function() {
+        p1Checkbox.addEventListener('change', function () {
             if (this.checked) {
                 p2Checkbox.checked = false;
                 p2Checkbox.disabled = true;
@@ -33,7 +72,7 @@ document.addEventListener('DOMContentLoaded', function () {
             localStorage.setItem('isP1', this.checked);
         });
 
-        p2Checkbox.addEventListener('change', function() {
+        p2Checkbox.addEventListener('change', function () {
             if (this.checked) {
                 p1Checkbox.checked = false;
                 p1Checkbox.disabled = true;
@@ -45,18 +84,22 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function setupDropdowns() {
-        document.getElementById('impactedServiceDropdownHeader').addEventListener('click', function() {
+        // Service dropdown
+        document.getElementById('impactedServiceDropdownHeader').addEventListener('click', function (e) {
+            e.stopPropagation();
             const dropdown = document.getElementById('impactedServiceDropdownList');
             dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
         });
 
-        document.getElementById('impactedUsersDropdownHeader').addEventListener('click', function() {
+        // Users dropdown
+        document.getElementById('impactedUsersDropdownHeader').addEventListener('click', function (e) {
+            e.stopPropagation();
             const dropdown = document.getElementById('impactedUsersDropdownlist');
             dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
         });
 
         // Close dropdowns when clicking outside
-        document.addEventListener('click', function(event) {
+        document.addEventListener('click', function (event) {
             const serviceDropdown = document.getElementById('impactedServiceDropdown');
             const serviceList = document.getElementById('impactedServiceDropdownList');
             const usersDropdown = document.getElementById('impactedUsersDropdown');
@@ -69,21 +112,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 usersList.style.display = 'none';
             }
         });
-        
+
         // Real-time updates for selections
         const serviceCheckboxes = document.querySelectorAll('input[name="impacted-service"]');
         serviceCheckboxes.forEach(checkbox => {
             checkbox.addEventListener('change', updateServiceSelectionDisplay);
         });
-        
+
         const userCheckboxes = document.querySelectorAll('input[name="impacted-users"]');
         userCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
+            checkbox.addEventListener('change', function () {
                 handleUserCheckboxChange(checkbox);
             });
         });
     }
-    
+
     function handleUserCheckboxChange(checkbox) {
         if (checkbox.value === 'GLOBAL') {
             if (checkbox.checked) {
@@ -107,28 +150,152 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 // If no regions are selected, enable GLOBAL again
                 const anyRegionChecked = document.querySelectorAll('input[name="impacted-users"]:not([value="GLOBAL"]):checked').length > 0;
-               
+
                 if (!anyRegionChecked) {
                     globalCheckbox.disabled = false;
                 }
             }
         }
-       
+
         updateUserSelectionDisplay();
     }
-    
+
     function updateServiceSelectionDisplay() {
         const selectedServices = getSelectedValues('impacted-service');
-        
-        document.getElementById('selectedImpacted').textContent = selectedServices.length > 0 ? selectedServices.join(', ') : 'Select';
+        const header = document.getElementById('impactedServiceDropdownHeader');
+
+        if (selectedServices.length > 0) {
+            header.innerHTML = `
+            <div class="selected-items-display">
+                ${selectedServices.map(service => `<span class="selected-item-tag">${service}</span>`).join(', ')}
+            </div>
+            <p class="down-arrow">▼</p>
+        `;
+        } else {
+            header.innerHTML = `
+            <span>Select Service/Application(s)</span>
+            <p class="down-arrow">▼</p>
+        `;
+        }
+
         localStorage.setItem('selectedServices', JSON.stringify(selectedServices));
     }
-    
+
     function updateUserSelectionDisplay() {
         const selectedUsers = getSelectedValues('impacted-users');
-        
-        document.getElementById('selectedImpactedUsers').textContent = selectedUsers.length > 0 ? selectedUsers.join(', ') : 'Select';
+        const header = document.getElementById('impactedUsersDropdownHeader');
+
+        if (selectedUsers.length > 0) {
+            header.innerHTML = `
+            <div class="selected-items-display">
+                ${selectedUsers.map(user => `<span class="selected-item-tag">${user}</span>`).join(', ')}
+            </div>
+            <p class="down-arrow-users">▼</p>
+        `;
+        } else {
+            header.innerHTML = `
+            <span>Select User(s)</span>
+            <p class="down-arrow-users">▼</p>
+        `;
+        }
+
         localStorage.setItem('selectedUsers', JSON.stringify(selectedUsers));
+    }
+
+    // Add incident function
+    function addIncident() {
+        const incidentNum = document.getElementById('incident-num').value.trim();
+        const isP1 = document.getElementById('is-p1').checked;
+        const isP2 = document.getElementById('is-p2').checked;
+
+        // Validate incident number
+        const validationResult = validateIncident(incidentNum);
+        const incidentError = document.getElementById('incError');
+
+        if (!incidentNum) {
+            alert('Please enter an incident number');
+            return;
+        }
+
+        if (!validationResult.isValid) {
+            incidentError.style.display = 'block';
+            return;
+        }
+
+        incidentError.style.display = 'none';
+
+        // Check for duplicates
+        if (incidents.some(inc => inc.number === incidentNum)) {
+            alert('This incident has already been added');
+            return;
+        }
+
+        // Confirm if starts with zero
+        if (validationResult.startsWithZero) {
+            if (!confirm('Incident number starts with Zero. Add anyway?')) {
+                return;
+            }
+        }
+
+        // Add to incidents array
+        incidents.push({
+            number: incidentNum,
+            isP1: isP1,
+            isP2: isP2
+        });
+
+        // Clear inputs
+        document.getElementById('incident-num').value = '';
+        document.getElementById('is-p1').checked = false;
+        document.getElementById('is-p2').checked = false;
+        document.getElementById('is-p1').disabled = false;
+        document.getElementById('is-p2').disabled = false;
+
+        // Update display
+        renderIncidentsList();
+
+        // Save to localStorage
+        localStorage.setItem('incidents', JSON.stringify(incidents));
+    }
+
+    // Render incidents list
+    function renderIncidentsList() {
+        const container = document.getElementById('incidentsList');
+
+        if (incidents.length === 0) {
+            container.innerHTML = '<div class="empty-state">No incidents added yet</div>';
+            return;
+        }
+
+        container.innerHTML = incidents.map((incident, index) => `
+        <div class="incident-item flex">
+            <div>
+                <span class="incident-number">${incident.number}</span>
+                ${incident.isP1 ? '<span class="incident-priority priority-p1">[P1]</span>' : ''}
+                ${incident.isP2 ? '<span class="incident-priority priority-p2">[P2]</span>' : ''}
+            </div>
+            <button class="remove-incident-btn" onclick="removeIncident(${index})">×</button>
+        </div>
+    `).join('');
+    }
+
+    // Remove incident function
+    window.removeIncident = function (index) {
+        incidents.splice(index, 1);
+        renderIncidentsList();
+        localStorage.setItem('incidents', JSON.stringify(incidents));
+    };
+
+    function setupIncidentButton() {
+        document.getElementById('addIncidentBtn').addEventListener('click', addIncident);
+    }
+
+    function loadIncidentsFromStorage() {
+        const saved = localStorage.getItem('incidents');
+        if (saved) {
+            incidents = JSON.parse(saved);
+            renderIncidentsList();
+        }
     }
 
     function loadFromLocalStorage() {
@@ -143,26 +310,26 @@ document.addEventListener('DOMContentLoaded', function () {
 
         Object.entries(formFields).forEach(([fieldId, storageKey]) => {
             const defaultValue = fieldId === 'service-status' ? 'Available' : '';
-            document.getElementById(fieldId).value = localStorage.getItem(storageKey) || defaultValue;
+            document.getElementById(fieldId).value = localStorage.getItem(storageKey);
         });
-        
+
         const savedServices = JSON.parse(localStorage.getItem('selectedServices')) || [];
         savedServices.forEach(service => {
             const checkbox = document.querySelector(`input[name="impacted-service"][value="${service}"]`);
             if (checkbox) checkbox.checked = true;
         });
         updateServiceSelectionDisplay();
-        
+
         const savedUsers = JSON.parse(localStorage.getItem('selectedUsers')) || [];
         savedUsers.forEach(user => {
             const checkbox = document.querySelector(`input[name="impacted-users"][value="${user}"]`);
             if (checkbox) checkbox.checked = true;
         });
-        
+
         // Handle GLOBAL and regions state when loading from storage
         const globalSelected = savedUsers.includes('GLOBAL');
         const regionsSelected = savedUsers.some(user => ['APAC', 'EMEA', 'AMERICAS'].includes(user));
-        
+
         if (globalSelected) {
             document.querySelectorAll('input[name="impacted-users"]:not([value="GLOBAL"])').forEach(cb => {
                 cb.disabled = true;
@@ -170,16 +337,16 @@ document.addEventListener('DOMContentLoaded', function () {
         } else if (regionsSelected) {
             document.querySelector('input[name="impacted-users"][value="GLOBAL"]').disabled = true;
         }
-        
+
         updateUserSelectionDisplay();
 
         // Load P1/P2 checkbox states
         const isP1 = localStorage.getItem('isP1') === 'true';
         const isP2 = localStorage.getItem('isP2') === 'true';
-        
+
         const p1Checkbox = document.getElementById('is-p1');
         const p2Checkbox = document.getElementById('is-p2');
-        
+
         if (isP1) {
             p1Checkbox.checked = true;
             p2Checkbox.disabled = true;
@@ -190,28 +357,32 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function setupClearStorage() {
-        document.getElementById('clearStorage').addEventListener('click', function() {
+        document.getElementById('clearStorage').addEventListener('click', function () {
             if (confirm('Clear saved Data?')) {
                 localStorage.clear();
-                
+
+                incidents = [];
+                renderIncidentsList();
+
                 document.getElementById('dataform').reset();
-                document.getElementById('selectedImpacted').textContent = 'Select';
-                document.getElementById('selectedImpactedUsers').textContent = 'Select';
-                
+
+                updateServiceSelectionDisplay();
+                updateUserSelectionDisplay();
+
                 // Re-enable all checkboxes
                 document.querySelectorAll('input[name="impacted-users"]').forEach(cb => {
                     cb.disabled = false;
                 });
-                
+
                 // Re-enable P1/P2 checkboxes
                 document.getElementById('is-p1').disabled = false;
                 document.getElementById('is-p2').disabled = false;
-                
+
                 // Hide copy buttons and clear outputs
                 ['copyToBtn', 'copyBccBtn', 'copySubBtn', 'copyButton'].forEach(btnId => {
                     document.getElementById(btnId).style.display = 'none';
                 });
-                
+
                 ['outputTorecipient', 'outputBccrecipient', 'outputSubject', 'outputContent'].forEach(outputId => {
                     document.getElementById(outputId).innerHTML = '';
                 });
@@ -221,45 +392,45 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function roundToNearestQuarter(dateTimeString) {
         if (!dateTimeString) return '';
-        
+
         const date = new Date(dateTimeString);
         const minutes = date.getMinutes();
-        
+
         // Round to nearest 15-minute interval
         const roundedMinutes = Math.round(minutes / 15) * 15;
-        
+
         if (roundedMinutes === 60) {
             date.setHours(date.getHours() + 1);
             date.setMinutes(0);
         } else {
             date.setMinutes(roundedMinutes);
         }
-        
+
         date.setSeconds(0);
         date.setMilliseconds(0);
-        
+
         // Return in the format expected by datetime-local input
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
         const hours = String(date.getHours()).padStart(2, '0');
         const mins = String(date.getMinutes()).padStart(2, '0');
-        
+
         return `${year}-${month}-${day}T${hours}:${mins}`;
     }
 
     function addOneHour(dateTimeString) {
         if (!dateTimeString) return '';
-        
+
         const date = new Date(dateTimeString);
         date.setHours(date.getHours() + 1);
-        
+
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
         const hours = String(date.getHours()).padStart(2, '0');
         const minutes = String(date.getMinutes()).padStart(2, '0');
-        
+
         return `${year}-${month}-${day}T${hours}:${minutes}`;
     }
 
@@ -273,23 +444,34 @@ document.addEventListener('DOMContentLoaded', function () {
             const hours = String(currentTime.getHours()).padStart(2, '0');
             const minutes = String(currentTime.getMinutes()).padStart(2, '0');
             const currentTimeString = roundToNearestQuarter(`${year}-${month}-${day}T${hours}:${minutes}`);
-            
+
             // Round times to nearest quarter hour
             let startTimeValue = document.getElementById('start-time').value;
             let endTimeValue = document.getElementById('end-time').value;
             let nextUpdateValue = document.getElementById('next-update').value;
             const serviceStatus = document.getElementById('service-status').value;
-            
+
             if (startTimeValue) {
                 startTimeValue = roundToNearestQuarter(startTimeValue);
                 document.getElementById('start-time').value = startTimeValue;
             }
-            
+
             if (endTimeValue) {
                 endTimeValue = roundToNearestQuarter(endTimeValue);
                 document.getElementById('end-time').value = endTimeValue;
             }
-            
+
+            // Validate incidents
+            if (incidents.length === 0) {
+                alert('Please add at least one incident');
+                return;
+            }
+
+            // Format all incidents for display
+            const incidentsDisplay = incidents.map(inc =>
+                formatIncidentNumber(inc.number, inc.isP1, inc.isP2)
+            ).join(', ');
+
             // Handle next update time based on service status
             if (serviceStatus === 'Available') {
                 nextUpdateValue = '';
@@ -300,7 +482,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 nextUpdateValue = roundToNearestQuarter(nextUpdateValue);
                 document.getElementById('next-update').value = nextUpdateValue;
             }
-            
+
             const formData = {
                 incidentNum: document.getElementById('incident-num').value.trim(),
                 serviceStatus: serviceStatus,
@@ -317,33 +499,33 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const selectedServices = getSelectedValues('impacted-service');
             const selectedUsers = getSelectedValues('impacted-users');
-            
-            if (!validateForm(formData, selectedServices, selectedUsers)) {
+
+            if (!validateForm(formData, selectedServices, selectedUsers, serviceStatus)) {
                 return;
             }
-            
+
             if (formData.progress) {
                 addProgressEntry(formData.progress, formData.currentTimeString);
             }
-    
+
             saveFormData(formData);
-    
+
             const processedData = processSelections(selectedServices, selectedUsers);
             const formattedTimes = formatTimes(formData);
-            
+
             // Format incident number with priority
             const incidentDisplay = formatIncidentNumber(formData.incidentNum, formData.isP1, formData.isP2);
-            
+
             generateOutputElements(
-                processedData.recipientList, 
-                formData.serviceStatus, 
-                incidentDisplay, 
-                processedData.servicesFormatted, 
-                processedData.usersFormatted, 
-                formattedTimes.startTime, 
-                formattedTimes.endTime, 
-                formattedTimes.nextUpdate, 
-                formData.description, 
+                processedData.recipientList,
+                formData.serviceStatus,
+                incidentsDisplay,
+                processedData.servicesFormatted,
+                processedData.usersFormatted,
+                formattedTimes.startTime,
+                formattedTimes.endTime,
+                formattedTimes.nextUpdate,
+                formData.description,
                 formData.impact
             );
         });
@@ -358,7 +540,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return incidentNum;
     }
 
-    function validateForm(formData, selectedServices, selectedUsers) {
+    function validateForm(formData, selectedServices, selectedUsers, serviceStatus) {
         if (selectedServices.length === 0) {
             alert('Please Select at least one Service/Application');
             return false;
@@ -383,26 +565,31 @@ document.addEventListener('DOMContentLoaded', function () {
             alert('Please Provide an Impact');
             return false;
         }
-        
-        const incidentInput = document.getElementById('incident-num');
-        const incidentError = document.getElementById('incError');
-        const validationResult = validateIncident(formData.incidentNum);
-        
-        if (!validationResult.isValid) {
-            incidentInput.classList.add('invalid');
-            incidentError.style.display = 'block';
+
+        if (serviceStatus === 'Available' && !formData.endTime) {
+            alert('Please Provide an End Time');
             return false;
-        } else {
-            incidentInput.classList.remove('invalid');
-            incidentError.style.display = 'none';
-            
-            if (validationResult.startsWithZero) {
-                if (!confirm('Incident number starts with Zero. Proceed anyway?')) {
-                    return false;
-                }
-            }
         }
-        
+
+        // const incidentInput = document.getElementById('incident-num');
+        // const incidentError = document.getElementById('incError');
+        // const validationResult = validateIncident(formData.incidentNum);
+
+        // if (!validationResult.isValid) {
+        //     incidentInput.classList.add('invalid');
+        //     incidentError.style.display = 'block';
+        //     return false;
+        // } else {
+        //     incidentInput.classList.remove('invalid');
+        //     incidentError.style.display = 'none';
+
+        //     if (validationResult.startsWithZero) {
+        //         if (!confirm('Incident number starts with Zero. Proceed anyway?')) {
+        //             return false;
+        //         }
+        //     }
+        // }
+
         if (!formData.progress) {
             if (!confirm("Progress is Empty. Proceed anyway?")) {
                 return false;
@@ -425,7 +612,7 @@ document.addEventListener('DOMContentLoaded', function () {
         Object.entries(fieldMappings).forEach(([key, storageKey]) => {
             localStorage.setItem(storageKey, formData[key]);
         });
-        
+
         localStorage.setItem('isP1', formData.isP1);
         localStorage.setItem('isP2', formData.isP2);
     }
@@ -452,15 +639,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function processSelections(selectedServices, selectedUsers) {
         const servicesFormatted = formatList(selectedServices);
-        
-        const allRegionsSelected = selectedUsers.includes('APAC') && 
-                                  selectedUsers.includes('EMEA') && 
-                                  selectedUsers.includes('AMERICAS');
-        
+
+        const allRegionsSelected = selectedUsers.includes('APAC') &&
+            selectedUsers.includes('EMEA') &&
+            selectedUsers.includes('AMERICAS');
+
         const usersFormatted = allRegionsSelected ? "GLOBAL" : formatList(selectedUsers);
 
         let allRecipients = [];
-        
+
         if (selectedUsers.includes('GLOBAL')) {
             allRecipients = [...EMAIL_LISTS.APAC, ...EMAIL_LISTS.EMEA, ...EMAIL_LISTS.AMERICAS];
         } else {
@@ -473,15 +660,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const recipientList = [...new Set(allRecipients)].join('; ');
 
-        return { 
-            recipientList, 
-            servicesFormatted, 
-            usersFormatted 
+        return {
+            recipientList,
+            servicesFormatted,
+            usersFormatted
         };
     }
 
-    function generateOutputElements(recipientList, serviceStatus, incidentNum, services, users, 
-                                   startTime, endTime, nextUpdate, description, impact) {
+    function generateOutputElements(recipientList, serviceStatus, incidentNum, services, users,
+        startTime, endTime, nextUpdate, description, impact) {
         const outputrecipientTo = `
             <div class="receient-container flex">
                 <div class="to-div"><p class="to-tile"><u>T</u>o</p></div>
@@ -503,14 +690,14 @@ document.addEventListener('DOMContentLoaded', function () {
         const outputSubject = `
             <div class="sub-line flex">
                 <p class="subject-title">S<u>u</u>bject</p>
-                <p class="subject-body" id="subject-body">[${serviceStatus}] FOREX Incident Management Notification - ${services}</p>
+                <p class="subject-body" id="subject-body">[${serviceStatus}] FOREX Incident Management Notification : ${services}</p>
             </div>`;
 
         document.getElementById('outputSubject').innerHTML = outputSubject;
         document.getElementById('copySubBtn').style.display = 'block';
 
-        const outputTable = generateTable(services, users, serviceStatus, startTime, endTime, 
-                                        nextUpdate, incidentNum, description, impact);
+        const outputTable = generateTable(services, users, serviceStatus, startTime, endTime,
+            nextUpdate, incidentNum, description, impact);
         document.getElementById('outputContent').innerHTML = outputTable;
         document.getElementById('copyButton').style.display = "block";
 
@@ -521,10 +708,10 @@ document.addEventListener('DOMContentLoaded', function () {
     function applyServiceStatusColor(serviceStatus) {
         const serviceStatusDiv = document.getElementById('serviceStatusDiv');
         if (!serviceStatusDiv) return;
-        
+
         // Reset styles
         serviceStatusDiv.style.color = '';
-        
+
         const statusStyles = {
             "Available": { backgroundColor: '#6fc040' },
             "Under Observation": { backgroundColor: '#0070d2' },
@@ -542,34 +729,34 @@ document.addEventListener('DOMContentLoaded', function () {
         const entries = JSON.parse(localStorage.getItem('stringEntries')) || [];
         const tableBody = document.getElementById("tableBody");
         if (!tableBody) return;
-        
+
         tableBody.innerHTML = entries.map(entry => rowTemplate(entry)).join('');
     }
-    
+
     function formatDateTime(inputValue) {
         if (!inputValue) return "";
         const date = new Date(inputValue);
-        const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
         const year = String(date.getFullYear());
         const hours = String(date.getHours()).padStart(2, '0');
         const minutes = String(date.getMinutes()).padStart(2, '0');
-        return `${month}/${day}/${year} ${hours}:${minutes}`;
+        return `${day}/${month}/${year} ${hours}:${minutes}`;
     }
 
     function validateIncident(num) {
         const formatValid = /^INC[0-9]{8}$/.test(num);
-        
+
         if (!formatValid) {
-          return { 
-            isValid: false,
-            startsWithZero: false,
-          };
+            return {
+                isValid: false,
+                startsWithZero: false,
+            };
         }
-        
+
         return {
-          isValid: true,
-          startsWithZero: /^INC0/.test(num)
+            isValid: true,
+            startsWithZero: /^INC0/.test(num)
         };
     }
 
@@ -588,7 +775,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (len === 0) return '';
         if (len === 1) return item[0];
         if (len === 2) return `${item[0]} and ${item[1]}`;
-        
+
         return `${item.slice(0, -1).join(', ')}, and ${item[len - 1]}`;
     }
 
@@ -603,7 +790,7 @@ document.addEventListener('DOMContentLoaded', function () {
         ];
 
         copyButtons.forEach(({ id, contentId, successId }) => {
-            document.getElementById(id).addEventListener('click', function() {
+            document.getElementById(id).addEventListener('click', function () {
                 const content = document.getElementById(contentId).textContent;
                 copyToClipboard(content, successId);
             });
@@ -623,23 +810,23 @@ document.addEventListener('DOMContentLoaded', function () {
     // Copy table with styles to clipboard
     function copyTableWithStyles() {
         const tableContent = document.getElementById('outputContent').innerHTML;
-        
+
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = tableContent;
-        
+
         const table = tempDiv.querySelector('table');
         table.style.borderCollapse = 'collapse';
         table.style.width = '100%';
-        
+
         const cells = table.querySelectorAll('td');
         cells.forEach(cell => {
             cell.style.border = '1px solid #000';
             cell.style.padding = '8px';
             cell.style.height = '40px';
         });
-        
+
         applySpecificStyles(table);
-        
+
         const htmlContent = `
         <html>
         <head>
@@ -663,12 +850,12 @@ document.addEventListener('DOMContentLoaded', function () {
         </body>
         </html>
         `;
-        
+
         try {
             const clipboardItem = new ClipboardItem({
                 'text/html': new Blob([htmlContent], { type: 'text/html' })
             });
-            
+
             navigator.clipboard.write([clipboardItem]).then(() => {
                 showCopySuccess();
             }).catch(err => {
@@ -704,20 +891,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function generateTable(services, users, serviceStatus, startTime, endTime,
         nextUpdate, incidentNum, description, impact) {
-       
+
         const statusClasses = {
             "Available": "status-available",
             "Under Observation": "status-observation",
             "Unavailable": "status-unavailable",
             "Degraded": "status-degraded"
         };
-        
-        const statusClass = statusClasses[serviceStatus] || "status-available";
-        
+
+        const statusClass = statusClasses[serviceStatus];
+
         // Check if there are any progress entries
         const entries = JSON.parse(localStorage.getItem('stringEntries')) || [];
         const hasProgressEntries = entries.length > 0;
-        
+
         // Base table structure
         let tableHTML = `
         <table class="output-table" border="1">
@@ -759,7 +946,7 @@ document.addEventListener('DOMContentLoaded', function () {
         <td colspan="1" class="input-question">Impact</td>
         <td class="input-answer" colspan="3">${impact}</td>
         </tr>`;
-        
+
         // Only add progress section if there are entries
         if (hasProgressEntries) {
             tableHTML += `
@@ -773,9 +960,9 @@ document.addEventListener('DOMContentLoaded', function () {
             <tbody id="tableBody">
             </tbody>`;
         }
-        
+
         tableHTML += `</table>`;
-        
+
         return tableHTML;
     }
 });
